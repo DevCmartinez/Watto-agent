@@ -56,3 +56,13 @@ export const validarLogin = validate([
   body("email").trim().isEmail().withMessage("Email inválido").normalizeEmail(),
   body("password").notEmpty().withMessage("La contraseña es requerida"),
 ]);
+
+export const validarConsulta = validate([
+  body("pregunta").isString().trim().isLength({ min: 3, max: 2000 }),
+  body("historial").optional().isArray({ max: 40 }),
+]);
+
+export const validarConsultaStream = validate([
+  body("pregunta").isString().trim().isLength({ min: 3, max: 2000 }),
+  body("historial").optional().isArray({ max: 40 }),
+]);
