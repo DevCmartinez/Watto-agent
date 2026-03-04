@@ -44,7 +44,7 @@ export function soloAdmin(
   if (req.usuario?.rol !== "admin") {
     res
       .status(403)
-      .json({ exitoso: false, mensaje: "Acceso solo para administradores" });
+      .json({ exitoso: false, mensaje: "Acceso denegado" });
     return;
   }
   next();

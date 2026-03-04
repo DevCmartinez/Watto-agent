@@ -8,6 +8,17 @@ import {
   CrearUsuarioDto,
 } from "../models/usuario.model";
 
+// Error personalizado para manejar errores de negocio
+export class AppError extends Error {
+  constructor(
+    public message: string,
+    public statusCode: number = 400,
+  ) {
+    super(message);
+    this.name = "AppError";
+  }
+}
+
 // Generar un token JWT con los datos del usuario
 function generarToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.jwt.secret, {
@@ -23,12 +34,12 @@ export async function login(
   // 1. Buscar el usuario por email
   const usuario = await usuarioRepo.findByEmail(email);
   if (!usuario) {
-    throw new Error("Credenciales invalidas");
-  }
+    throw new AppError("Email invalido",401);
+  } 
   // 2. Verificar el password contra el hash
   const passwordValido = await verificarHash(password, usuario.password);
   if (!passwordValido) {
-    throw new Error("Credenciales invalidas");
+    throw new AppError("Contraseña invalida",401);
   }
   // 3. Generar el token JWT
   const token = generarToken({
@@ -48,7 +59,7 @@ export async function registrar(
   // Verificar que el email no exista
   const existe = await usuarioRepo.emailExiste(datos.email);
   if (existe) {
-    throw new Error("El email ya esta registrado");
+    throw new AppError("El email ya esta registrado",409);
   }
   // Hashear el password antes de guardar
   const passwordHash = await hashear(datos.password);

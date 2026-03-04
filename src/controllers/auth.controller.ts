@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "../services/auth.service";
 import { sendSuccess, sendError } from "../utils/response.util";
+
 // POST /api/auth/login
 export async function login(
   req: Request,

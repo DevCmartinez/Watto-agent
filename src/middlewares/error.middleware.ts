@@ -9,33 +9,40 @@ export function errorMiddleware(
   console.error(`[Error] ${err.message}`);
   const codigo = (err as any).status || (err as any).statusCode;
   const mensaje = err.message.toLowerCase();
+
+  // Error de MySQL: clave duplicada (ej: email ya existe)
+  if ((err as any).code === "ER_DUP_ENTRY") {
+    res.status(409).json({
+      exitoso: false,
+      mensaje: "El E-mail ya existe",
+    });
+    return;
+  }
+
   // Rate limit de Gemini
   if (
     codigo === 429 ||
     mensaje.includes("quota") ||
     mensaje.includes("rate limit")
   ) {
-    res
-      .status(429)
-      .json({
-        exitoso: false,
-        mensaje: "Limite de peticiones de IA alcanzado.Espera unos segundos.",
-      });
+    res.status(429).json({
+      exitoso: false,
+      mensaje: "Limite de peticiones de IA alcanzado.Espera unos segundos.",
+    });
     return;
   }
   // Safety filter de Gemini
   if (mensaje.includes("safety") || mensaje.includes("blocked")) {
-    res
-      .status(400)
-      .json({
-        exitoso: false,
-        mensaje:
-          "La consulta fue bloqueada por filtros de seguridad. Reformula la pregunta.",
-      });
+    res.status(400).json({
+      exitoso: false,
+      mensaje:
+        "La consulta fue bloqueada por filtros de seguridad. Reformula la pregunta.",
+    });
     return;
   }
   res.status(codigo || 500).json({
     exitoso: false,
     mensaje: err.message || "Error interno del servidor",
+    error: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 }
