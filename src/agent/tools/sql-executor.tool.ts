@@ -32,8 +32,8 @@ export const sqlExecutorTool = (tool as any)({
     sql: string;
     descripcion: string;
   }): Promise<SQLExecutorResult> => {
-    console.log(`[SQL] ${descripcion}`);
-    console.log(`[SQL] ${sql}`);
+    // console.log(`[SQL] ${descripcion}`);
+    // console.log(`[SQL] ${sql}`);
 
     // Seguridad: solo SELECT
     const sqlLower = sql.trim().toLowerCase().replace(/\s+/g, " ");
@@ -66,7 +66,7 @@ export const sqlExecutorTool = (tool as any)({
     try {
       const [filas] = await pool.query<any>(sqlFinal);
       const datos = Array.isArray(filas) ? filas : [filas];
-      console.log(`[SQL] Resultado: ${datos.length} fila(s)`);
+      // console.log(`[SQL] Resultado: ${datos.length} fila(s)`);
       return {
         exito: true,
         total_filas: datos.length,

@@ -26,7 +26,9 @@ function getTools(): Record<string, any> {
 // Llamar una vez al arrancar el servidor
 export async function inicializarAgente(): Promise<void> {
   if (listo) return;
-  console.log(`[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`);
+  console.log(
+    `[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`,
+  );
   const modo = env.agent.mode;
   const esquemaBD =
     modo === "db" || modo === "both" ? await descubrirEsquemaBD() : undefined;
@@ -79,6 +81,11 @@ export async function consultarAgenteStreaming(
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+
+  // Silenciar console.error del SDK durante el streaming
+  const originalConsoleError = console.error;
+  console.error = () => {};
+
   try {
     const resultado = streamText({
       model: aiModel,
@@ -91,23 +98,53 @@ export async function consultarAgenteStreaming(
     });
     for await (const parte of resultado.fullStream) {
       if (parte.type === "text-delta")
-        res.write(`data: ${JSON.stringify({ tipo: "texto", chunk: parte.text })}
-`);
+        res.write(
+          `data: ${JSON.stringify({ tipo: "texto", chunk: parte.text })}\n\n`,
+        );
       if (parte.type === "tool-call")
-        res.write(`data: ${JSON.stringify({
-          tipo: "tool",
-          nombre: parte.toolName,
-          mensaje: `Consultando: ${parte.toolName}...`,
-        })}
-`);
+        res.write(
+          `data: ${JSON.stringify({ tipo: "tool", nombre: parte.toolName })}\n\n`,
+        );
+      if (parte.type === "error") {
+        // El SDK emite un evento tipo "error" dentro del stream
+        const msg = (parte as any).error?.message?.toLowerCase() || "";
+        const esRateLimit =
+          msg.includes("quota") ||
+          msg.includes("429") ||
+          msg.includes("resource_exhausted") ||
+          msg.includes("maxretriesexceeded");
+        res.write(
+          `data: ${JSON.stringify({
+            tipo: "error",
+            mensaje: esRateLimit
+              ? "Limite de consultas alcanzado. Espera unos minutos e intenta de nuevo."
+              : "Error procesando la consulta.",
+          })}\n\n`,
+        );
+      }
       if (parte.type === "finish")
-        res.write(`data: ${JSON.stringify({ tipo: "fin", tokens: parte.totalUsage.totalTokens ?? 0 })}
-`);
+        res.write(
+          `data: ${JSON.stringify({ tipo: "fin", tokens: parte.totalUsage.totalTokens ?? 0 })}\n\n`,
+        );
     }
+    console.error = originalConsoleError;
   } catch (e: any) {
-    res.write(`data: ${JSON.stringify({ tipo: "error", mensaje: e.message })}
-`);
+    const msg = e?.message?.toLowerCase() || "";
+    const esRateLimit =
+      msg.includes("quota") ||
+      msg.includes("429") ||
+      msg.includes("resource_exhausted") ||
+      msg.includes("maxretriesexceeded");
+    res.write(
+      `data: ${JSON.stringify({
+        tipo: "error",
+        mensaje: esRateLimit
+          ? "Limite de consultas alcanzado. Espera unos minutos e intenta de nuevo."
+          : "Error procesando la consulta.",
+      })}\n\n`,
+    );
   } finally {
+    console.error = originalConsoleError;
     res.end();
   }
 }
