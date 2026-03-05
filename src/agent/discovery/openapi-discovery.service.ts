@@ -23,7 +23,7 @@ let cacheApi: EsquemaEndpoint[] | null = null;
 
 export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
   if (cacheApi) return cacheApi;
-  console.log("[Discovery] Leyendo esquema OpenAPI...");
+  console.log(`[${env.agent.name}] Está Leyendo el esquema OpenAPI...]`);
   const url = env.agent.api.openApiUrl;
   if (!url) throw new Error("AGENT_API_OPENAPI_URL no configurado en .env");
   let contenido: any;
@@ -67,6 +67,6 @@ export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
     }
   }
   cacheApi = endpoints;
-  console.log(`[Discovery] ${endpoints.length} endpoint(s) encontrado(s)`);
+  console.log(`[${env.agent.name}] Descubrí ${endpoints.length} endpoint(s)`);
   return endpoints;
 }

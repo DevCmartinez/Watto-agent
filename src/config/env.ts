@@ -16,7 +16,7 @@ function getEnv(key: string, defaultValue?: string): string {
 export const env = {
   // ■■ Servidor ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
   port: parseInt(process.env.PORT || "3000", 10),
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv: process.env.NODE_ENV || "Tatooine",
   // ■■ Base de datos ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
   db: {
     type: (process.env.DB_TYPE || "mysql") as "mysql" | "postgres",

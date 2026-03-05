@@ -26,7 +26,7 @@ let cache: EsquemaTabla[] | null = null;
 //Función para descubrir el esquema de la base de datos
 export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
   if (cache) return cache;
-  console.log("[Discovery] Leyendo esquema de MySQL...");
+  console.log(`[${env.agent.name}] Estoy leyendo el esquema de MySQL...`);
   const [tablas] = await pool.query<any>("SHOW TABLES");
   const claveTabla = Object.keys(tablas[0])[0];
   let nombres: string[] = tablas.map((t: any) => t[claveTabla]);
@@ -36,7 +36,7 @@ export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
   if (excluidas.length > 0) {
     nombres = nombres.filter((t) => !excluidas.includes(t));
   }
-  console.log(`[Discovery] Tablas incluidas: ${nombres.join(", ")}`);
+  console.log(`[${env.agent.name}] Encontre las tablas => [${nombres.join(", ")}]`);
 
   //Crear un array de esquemas
   const esquemas: EsquemaTabla[] = [];
@@ -54,8 +54,8 @@ export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
 SELECT COLUMN_NAME AS columna,
 REFERENCED_TABLE_NAME AS tablaReferencia,
 REFERENCED_COLUMN_NAME AS columnaReferencia
-FROMINFORMATION_SCHEMA.KEY_COLUMN_USAGE
-WHERETABLE_SCHEMA = DATABASE()
+FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = DATABASE()
 AND
 TABLE_NAME = ? AND
 REFERENCED_TABLE_NAME IS NOT NULL`,
@@ -72,7 +72,7 @@ REFERENCED_TABLE_NAME IS NOT NULL`,
     });
   }
   cache = esquemas;
-  console.log(`[Discovery] ${esquemas.length} tabla(s) procesada(s)`);
+  console.log(`[${env.agent.name}] ${esquemas.length} tabla(s) procesada(s)`);
   return esquemas;
 }
 export function invalidarCache(): void {

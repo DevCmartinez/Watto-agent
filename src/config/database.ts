@@ -19,6 +19,6 @@ export async function connectDatabase(): Promise<void> {
   const conn = await pool.getConnection();
   await conn.ping();
   conn.release();
-  console.log(`[DB] Conectado a MySQL: ${env.db.host}/${env.db.name}`);
+  console.log(`[${env.agent.name}] Conectado a MySQL: ${env.db.host}/${env.db.name}`);
 }
 export default pool;

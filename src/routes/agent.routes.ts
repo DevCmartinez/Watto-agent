@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { body } from "express-validator";
 import * as agentCtrl from "../controllers/agent.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validarConsulta, validarConsultaStream, validate } from "../middlewares/validate.middleware";

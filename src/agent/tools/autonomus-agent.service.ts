@@ -26,8 +26,7 @@ function getTools(): Record<string, any> {
 // Llamar una vez al arrancar el servidor
 export async function inicializarAgente(): Promise<void> {
   if (listo) return;
-  console.log(`
-[Agente] Iniciando en modo: ${env.agent.mode.toUpperCase()}`);
+  console.log(`[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`);
   const modo = env.agent.mode;
   const esquemaBD =
     modo === "db" || modo === "both" ? await descubrirEsquemaBD() : undefined;
@@ -35,7 +34,7 @@ export async function inicializarAgente(): Promise<void> {
     modo === "api" || modo === "both" ? await descubrirEsquemaAPI() : undefined;
   systemPrompt = construirSystemPrompt(esquemaBD, esquemaAPI);
   listo = true;
-  console.log(`[Agente] Listo. System prompt: ${systemPrompt.length} caracteres
+  console.log(`[${env.agent.name}] OK System prompt: ${systemPrompt.length} caracteres
 `);
 }
 function verificar(): void {
