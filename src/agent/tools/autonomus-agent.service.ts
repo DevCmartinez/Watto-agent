@@ -97,6 +97,8 @@ export async function consultarAgenteStreaming(
       temperature: AI_CONFIG.temperature,
     });
     for await (const parte of resultado.fullStream) {
+      // console.log("[STREAM]", parte.type); // <- agregar esta línea
+
       if (parte.type === "text-delta")
         res.write(
           `data: ${JSON.stringify({ tipo: "texto", chunk: parte.text })}\n\n`,
@@ -106,6 +108,8 @@ export async function consultarAgenteStreaming(
           `data: ${JSON.stringify({ tipo: "tool", nombre: parte.toolName })}\n\n`,
         );
       if (parte.type === "error") {
+        // console.log("[TOOL ERROR]", (parte as any).error);
+
         // El SDK emite un evento tipo "error" dentro del stream
         const msg = (parte as any).error?.message?.toLowerCase() || "";
         const esRateLimit =

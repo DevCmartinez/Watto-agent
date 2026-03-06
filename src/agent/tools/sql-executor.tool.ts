@@ -12,61 +12,83 @@ interface SQLExecutorResult {
   sql_intentado?: string;
 }
 
+// Operaciones que NUNCA se permiten sin importar nada
+const SIEMPRE_BLOQUEADAS = ["drop", "truncate", "alter", "create"];
+
+// Operaciones que requieren confirmacion del usuario
+const REQUIEREN_CONFIRMACION = ["insert", "update", "delete"];
+
 export const sqlExecutorTool = (tool as any)({
   description:
-    "Ejecuta una consulta SQL SELECT en MySQL y retorna los resultados. " +
-    "Solo usar para lectura de datos. Generar el SQL basandose en el " +
-    "esquema de tablas disponible en el contexto.",
+    "Ejecuta cualquier consulta SQL en MySQL: SELECT, INSERT, UPDATE o DELETE. " +
+    "Para SELECT: ejecuta directamente. " +
+    "Para INSERT, UPDATE, DELETE: primero llama con confirmado=false para mostrar el plan, " +
+    "luego si el usuario confirma con 'si', llama de nuevo con confirmado=true para ejecutar." +
+    "NUNCA ejecutar DROP, TRUNCATE, ALTER ni CREATE bajo ninguna circunstancia.",
+
   parameters: z.object({
     sql: z
       .string()
       .describe(
-        "Consulta SQL SELECT valida para MySQL. Sin punto y coma al final.",
+        "Consulta SQL valida para MySQL. Puede ser SELECT, INSERT, UPDATE o DELETE. Sin punto y coma al final.",
       ),
     descripcion: z.string().describe("Que hace esta consulta en una frase."),
+    confirmado: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        "true si el usuario ya confirmo explicitamente con 'si'. " +
+          "Omitir o poner false en el primer intento de escritura.",
+      ),
   }),
+
   execute: async ({
     sql,
     descripcion,
+    confirmado = false,
   }: {
     sql: string;
     descripcion: string;
+    confirmado: boolean;
   }): Promise<SQLExecutorResult> => {
-    // console.log(`[SQL] ${descripcion}`);
-    // console.log(`[SQL] ${sql}`);
-
-    // Seguridad: solo SELECT
     const sqlLower = sql.trim().toLowerCase().replace(/\s+/g, " ");
 
-    // if (!sqlLower.startsWith("select")) {
-    //   return { exito: false, error: "Solo se permiten consultas SELECT." };
-    // }
-    // const palabrasBloqueadas = [
-    //   "insert",
-    //   "update",
-    //   "delete",
-    //   "drop",
-    //   "truncate",
-    //   "alter",
-    //   "create",
-    // ];
-    // for (const palabra of palabrasBloqueadas) {
-    //   const regex = new RegExp(`\\b${palabra}\\b`, "i");
-    //   if (regex.test(sqlLower)) {
-    //     return { exito: false, error: `Operacion '${palabra}' no permitida.` };
-    //   }
-    // }
+    // Bloqueo permanente — nunca se ejecutan
+    for (const palabra of SIEMPRE_BLOQUEADAS) {
+      const regex = new RegExp(`\\b${palabra}\\b`, "i");
+      if (regex.test(sqlLower)) {
+        return {
+          exito: false,
+          error: `Operacion '${palabra.toUpperCase()}' no permitida bajo ninguna circunstancia.`,
+        };
+      }
+    }
 
-    // Agregar LIMIT si no lo tiene
+    // Operaciones de escritura — requieren confirmacion
+    const esEscritura = REQUIEREN_CONFIRMACION.some((p) =>
+      new RegExp(`\\b${p}\\b`, "i").test(sqlLower),
+    );
+
+    if (esEscritura && !confirmado) {
+      return {
+        exito: false,
+        error: "REQUIERE_CONFIRMACION",
+      };
+    }
+
+    // Agregar LIMIT solo en SELECT
     let sqlFinal = sql.trim();
-    if (!sqlLower.includes("limit")) {
+    if (sqlLower.startsWith("select") && !sqlLower.includes("limit")) {
       sqlFinal += ` LIMIT ${env.agent.db.maxRows}`;
     }
+
+    // console.log("[SQL DEBUG] SQL a ejecutar:", sqlFinal); // <- agregar aqui
+    // console.log("[SQL DEBUG] confirmado:", confirmado); // <- y este
 
     try {
       const [filas] = await pool.query<any>(sqlFinal);
       const datos = Array.isArray(filas) ? filas : [filas];
-      // console.log(`[SQL] Resultado: ${datos.length} fila(s)`);
       return {
         exito: true,
         total_filas: datos.length,
@@ -74,7 +96,7 @@ export const sqlExecutorTool = (tool as any)({
         sql_ejecutado: sqlFinal,
       };
     } catch (e: any) {
-      console.error(`[SQL] Error: ${e.message}`);
+      // console.error(`[SQL] Error: ${e.message}`); // <- descomentar temporal
       return { exito: false, error: e.message, sql_intentado: sqlFinal };
     }
   },
