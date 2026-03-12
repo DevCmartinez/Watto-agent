@@ -2,20 +2,25 @@ import { generateText, streamText, ModelMessage, stepCountIs } from "ai";
 import { Response } from "express";
 import { env } from "../../config/env";
 import { aiModel, AI_CONFIG } from "../../ai/config/ai.config";
-import { descubrirEsquemaBD } from "../../agent/discovery/schema-discovery.service";
-import { descubrirEsquemaAPI } from "../../agent/discovery/openapi-discovery.service";
+import { descubrirEsquemaBD, invalidarCache } from "../../agent/discovery/schema-discovery.service";
+import { descubrirEsquemaAPI, invalidarCacheAPI } from "../../agent/discovery/openapi-discovery.service";
 import { construirSystemPrompt } from "../../agent/context/context-builder.service";
 import { sqlExecutorTool } from "../../agent/tools/sql-executor.tool";
 import { apiExecutorTool } from "../../agent/tools/api-executor.tool";
+import { usuarioExecutorTool } from "../../agent/tools/usuario-executor.tool";
+import * as fs from 'fs';
+import * as path from 'path';
 
 let systemPrompt: string | null = null;
-let listo = false;
+export let listo: boolean = false;
+
 function getTools(): Record<string, any> {
   const tools: Record<string, any> = {};
   const modo = env.agent.mode;
 
   if (modo === "db" || modo === "both") {
     tools.ejecutarSQL = sqlExecutorTool;
+    tools.gestionarUsuario = usuarioExecutorTool;
   }
   if (modo === "api" || modo === "both") {
     tools.ejecutarLlamadaAPI = apiExecutorTool;
@@ -23,22 +28,99 @@ function getTools(): Record<string, any> {
 
   return tools;
 }
+
+//Ruta del archivo cache (Estamos manejando cache del system prompt en disco)
+const CACHE_PATH = path.join(process.cwd(), '.schema-cache.json');
+
+// Estructura del cache
+interface SchemaCache {
+  systemPrompt: string;
+  generadoEn: string; // ISO date
+  modo: string;
+}
+
+// Leer cache si existe y es reciente (menos de 1 hora)
+function leerCache(): string | null {
+  try {
+    if (!fs.existsSync(CACHE_PATH)) return null;
+    const raw = fs.readFileSync(CACHE_PATH, 'utf-8');
+    const cache = JSON.parse(raw) as SchemaCache;
+
+    const hace1hora = Date.now() - 60 * 60 * 1000;
+    if (new Date(cache.generadoEn).getTime() < hace1hora) {
+      console.log(`[Cache] Expirado, regenerando...`);
+      return null;
+    }
+    if (cache.modo !== env.agent.mode) {
+      console.log(`[Cache] Modo cambio, regenerando...`);
+      return null;
+    }
+
+    return cache.systemPrompt;
+  } catch {
+    return null;
+  }
+}
+
+// Guardar cache en disco
+function guardarCache(prompt: string): void {
+  try {
+    const cache: SchemaCache = {
+      systemPrompt: prompt,
+      generadoEn: new Date().toISOString(),
+      modo: env.agent.mode,
+    };
+    fs.writeFileSync(CACHE_PATH, JSON.stringify(cache), 'utf-8');
+  } catch {
+    // Si falla el cache no es critico, continuar normal
+  }
+}
+
 // Llamar una vez al arrancar el servidor
 export async function inicializarAgente(): Promise<void> {
+
   if (listo) return;
   console.log(
     `[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`,
   );
+
+  // Intentar cargar desde cache
+  const cached = leerCache();
+  if (cached) {
+    systemPrompt = cached;
+    listo = true;
+    console.log(`[${env.agent.name}] Cache cargado (${systemPrompt.length} chars) — BD no consultada\n`);
+    return;
+  }
+
   const modo = env.agent.mode;
   const esquemaBD =
     modo === "db" || modo === "both" ? await descubrirEsquemaBD() : undefined;
   const esquemaAPI =
     modo === "api" || modo === "both" ? await descubrirEsquemaAPI() : undefined;
+
   systemPrompt = construirSystemPrompt(esquemaBD, esquemaAPI);
+  // Guardar cache
+  guardarCache(systemPrompt);
   listo = true;
   console.log(`[${env.agent.name}] OK System prompt: ${systemPrompt.length} caracteres
 `);
 }
+
+/**
+ * Reinicia el agente borrando el cache en disco y memoria.
+ */
+export async function reiniciarAgente(): Promise<void> {
+  if (fs.existsSync(CACHE_PATH)) {
+    fs.unlinkSync(CACHE_PATH);
+  }
+  invalidarCache(); // DB schema cache
+  invalidarCacheAPI(); // API schema cache
+  listo = false;
+  systemPrompt = null;
+  await inicializarAgente();
+}
+
 function verificar(): void {
   if (!listo || !systemPrompt)
     throw new Error(
@@ -84,7 +166,7 @@ export async function consultarAgenteStreaming(
 
   // Silenciar console.error del SDK durante el streaming
   const originalConsoleError = console.error;
-  console.error = () => {};
+  console.error = () => { };
 
   try {
     const resultado = streamText({

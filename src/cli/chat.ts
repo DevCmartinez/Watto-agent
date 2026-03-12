@@ -21,7 +21,7 @@ export async function procesarPregunta(pregunta: string): Promise<void> {
 
   // Objeto que imita Response de Express pero escribe en la terminal
   const fakeRes: any = {
-    setHeader: () => {},
+    setHeader: () => { },
     end: () => {
       if (!spinnerDetenido) {
         spinner.stop();
@@ -58,7 +58,7 @@ export async function procesarPregunta(pregunta: string): Promise<void> {
           finRespuesta(evento.tokens);
           if (respuestaFull.trim())
             historial.push({ role: "assistant", content: respuestaFull });
-          if (historial.length > 30) historial.splice(0, historial.length - 30);
+          if (historial.length > 10) historial.splice(0, historial.length - 10);
         }
         if (evento.tipo === "error") {
           spinner.stop();

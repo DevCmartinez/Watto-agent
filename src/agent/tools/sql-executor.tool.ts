@@ -39,7 +39,7 @@ export const sqlExecutorTool = (tool as any)({
       .default(false)
       .describe(
         "true si el usuario ya confirmo explicitamente con 'si'. " +
-          "Omitir o poner false en el primer intento de escritura.",
+        "Omitir o poner false en el primer intento de escritura.",
       ),
   }),
 
@@ -74,6 +74,14 @@ export const sqlExecutorTool = (tool as any)({
       return {
         exito: false,
         error: "REQUIERE_CONFIRMACION",
+      };
+    }
+
+    // Bloquear escritura directa en tabla usuarios (Esto lo hice por que no encripta la contraseña)
+    if (esEscritura && sqlLower.includes('usuarios')) {
+      return {
+        exito: false,
+        error: 'Para operaciones en la tabla usuarios usa la herramienta gestionarUsuario.',
       };
     }
 

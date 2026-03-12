@@ -70,3 +70,7 @@ export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
   console.log(`[${env.agent.name}] Descubrí ${endpoints.length} endpoint(s)`);
   return endpoints;
 }
+
+export function invalidarCacheAPI(): void {
+  cacheApi = null;
+}

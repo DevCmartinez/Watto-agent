@@ -1,6 +1,7 @@
 import { ModelMessage } from "ai";
 import { c, mostrarError } from "./ui";
 import pool from "../config/database";
+import { inicializarAgente, listo, reiniciarAgente } from "../agent/tools/autonomus-agent.service";
 
 export type ResultadoCmd = "continuar" | "salir" | "no_es_comando";
 
@@ -12,12 +13,14 @@ export async function procesarComando(
   const cmd = entrada.trim().toLowerCase();
 
   switch (cmd) {
+
     case "/salir":
     case "/exit":
       console.log("");
       console.log(c.exito("Hasta luego!"));
       console.log("");
       return "salir";
+
     case "/ayuda":
     case "/help":
       console.log("");
@@ -27,6 +30,7 @@ export async function procesarComando(
       );
       console.log("");
       return "continuar";
+
     case "/stats":
       try {
         const [[rows]] = await pool.query<any>(
@@ -58,6 +62,7 @@ Tablas en la BD: ${(rows as any)[0].total}`),
       }
       console.log("");
       return "continuar";
+
     case "/limpiar":
       historial.length = 0;
       console.log("");
@@ -67,5 +72,13 @@ Tablas en la BD: ${(rows as any)[0].total}`),
     default:
       mostrarError(`Comando desconocido: ${entrada}. Escribe /ayuda.`);
       return "continuar";
+
+    case '/refresh':
+      // El nuevo método centralizado
+      await reiniciarAgente();
+      console.log('');
+      console.log(c.exito('  Agente y esquema reiniciados.'));
+      console.log('');
+      return 'continuar';
   }
 }
