@@ -15,15 +15,15 @@ export const c = {
 
 export function mostrarBanner(host: string, modelo: string, modo: string): void {
   console.log('');
-  console.log(c.titulo('==============================================='));
-  console.log(c.titulo('--------------------WATTO----------------------'));
-  console.log(c.titulo('==============================================='));
+  console.log(c.titulo('================================================='));
+  console.log(c.titulo('--------------------WATTO------------------------'));
+  console.log(c.titulo('================================================='));
   console.log(c.exito(`Servidor: ${host}`));
   console.log(c.exito(`Modelo:${modelo}`));
   console.log(c.exito(`Modo:${modo.toUpperCase()}`));
-  console.log(c.tenue('------------------------------------------------'));
+  console.log(c.tenue('--------------------------------------------------'));
   console.log(c.tenue('/ayuda | /refresh | /historial | /limpiar | /salir'));
-  console.log(c.titulo('==============================================='));
+  console.log(c.titulo('================================================='));
   console.log('');
 }
 

@@ -3,13 +3,13 @@ import { z } from "zod";
 import pool from "../../config/database";
 import { hashear } from "../../utils/hash.util";
 
-export const usuarioExecutorTool = (tool as any)({
+export const usuarioExecutorTool = tool({
     description:
         "Gestiona usuarios del sistema: crear, actualizar o desactivar. " +
         "Usa esta herramienta en lugar de ejecutarSQL cuando la operacion involucre la tabla usuarios. " +
         "Maneja el cifrado de contraseñas automaticamente con bcrypt.",
 
-    parameters: z.object({
+    inputSchema: z.object({
         accion: z.enum(["crear", "actualizar", "desactivar"]).describe(
             "Tipo de operacion a realizar."
         ),
@@ -23,11 +23,7 @@ export const usuarioExecutorTool = (tool as any)({
         confirmado: z.boolean().optional().default(false),
     }),
 
-    execute: async ({ accion, datos, confirmado = false }: {
-        accion: "crear" | "actualizar" | "desactivar";
-        datos: { id?: number; nombre?: string; email?: string; password?: string; rol?: "admin" | "usuario" };
-        confirmado: boolean;
-    }) => {
+    execute: async ({ accion, datos, confirmado }) => {
         if (!confirmado) {
             return { exito: false, error: "REQUIERE_CONFIRMACION" };
         }

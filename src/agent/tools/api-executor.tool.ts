@@ -2,11 +2,11 @@ import { tool } from "ai";
 import { z } from "zod";
 import { env } from "../../config/env";
 
-export const apiExecutorTool = (tool as any)({
+export const apiExecutorTool = tool({
   description:
     "Ejecuta una llamada GET a la API REST externa y retorna los datos. " +
     "Usar la ruta y parametros correctos basandose en los endpoints del contexto.",
-  parameters: z.object({
+  inputSchema: z.object({
     ruta: z
       .string()
       .describe(
@@ -18,15 +18,7 @@ export const apiExecutorTool = (tool as any)({
       .describe("Parametros adicionales de query como objeto clave-valor."),
     descripcion: z.string().describe("Que informacion se esta pidiendo."),
   }),
-  execute: async ({
-    ruta,
-    parametrosQuery,
-    descripcion,
-  }: {
-    ruta: string;
-    parametrosQuery?: Record<string, string>;
-    descripcion: string;
-  }) => {
+  execute: async ({ ruta, parametrosQuery, descripcion }) => {
     console.log(`[API] ${descripcion}`);
     const baseUrl = env.agent.api.baseUrl;
     if (!baseUrl)

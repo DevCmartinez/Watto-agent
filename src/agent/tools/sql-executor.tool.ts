@@ -18,7 +18,7 @@ const SIEMPRE_BLOQUEADAS = ["drop", "truncate", "alter", "create"];
 // Operaciones que requieren confirmacion del usuario
 const REQUIEREN_CONFIRMACION = ["insert", "update", "delete"];
 
-export const sqlExecutorTool = (tool as any)({
+export const sqlExecutorTool = tool({
   description:
     "Ejecuta cualquier consulta SQL en MySQL: SELECT, INSERT, UPDATE o DELETE. " +
     "Para SELECT: ejecuta directamente. " +
@@ -26,7 +26,7 @@ export const sqlExecutorTool = (tool as any)({
     "luego si el usuario confirma con 'si', llama de nuevo con confirmado=true para ejecutar." +
     "NUNCA ejecutar DROP, TRUNCATE, ALTER ni CREATE bajo ninguna circunstancia.",
 
-  parameters: z.object({
+  inputSchema: z.object({
     sql: z
       .string()
       .describe(
@@ -43,15 +43,7 @@ export const sqlExecutorTool = (tool as any)({
       ),
   }),
 
-  execute: async ({
-    sql,
-    descripcion,
-    confirmado = false,
-  }: {
-    sql: string;
-    descripcion: string;
-    confirmado: boolean;
-  }): Promise<SQLExecutorResult> => {
+  execute: async ({ sql, descripcion, confirmado }) => {
     const sqlLower = sql.trim().toLowerCase().replace(/\s+/g, " ");
 
     // Bloqueo permanente — nunca se ejecutan
