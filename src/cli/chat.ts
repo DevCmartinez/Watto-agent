@@ -58,7 +58,7 @@ export async function procesarPregunta(pregunta: string): Promise<void> {
           finRespuesta(evento.tokens);
           if (respuestaFull.trim())
             historial.push({ role: "assistant", content: respuestaFull });
-          if (historial.length > 10) historial.splice(0, historial.length - 10);
+          if (historial.length > 6) historial.splice(0, historial.length - 6);
         }
         if (evento.tipo === "error") {
           spinner.stop();
