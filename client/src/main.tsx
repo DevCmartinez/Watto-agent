@@ -10,11 +10,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Cuanto tiempo los datos se consideran frescos (no refetch)
-      staleTime:
-        1000 * 60 * 2, // 2 minutos
+      staleTime: 1000 * 60 * 2, // 2 minutos
       // Cuanto tiempo se guarda en cache sin usar
-      gcTime:
-        1000 * 60 * 10, // 10 minutos
+      gcTime: 1000 * 60 * 10, // 10 minutos
       // No reintentar en errores 401/403 (no tiene sentido)
       retry: (failureCount, error: any) => {
         if (error?.status === 401 || error?.status === 403) return false;

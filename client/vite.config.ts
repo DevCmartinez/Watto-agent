@@ -20,8 +20,7 @@ export default defineConfig({
     proxy: {
       // Todo lo que empiece con /api se redirige al backend
       '/api': {
-        target:
-          'http://localhost:3000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         // No reescribir la ruta — /api/auth/login sigue siendo /api/auth/login
       },
