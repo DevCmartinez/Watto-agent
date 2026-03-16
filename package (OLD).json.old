@@ -4,10 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev:back": "nodemon --watch src --ext ts --exec ts-node src/app.ts",
-    "dev:front": "cd client && npm run dev",
-    "dev": "concurrently \"npm run dev:back\" \"npm run dev:front\"",
-    "build": "cd client && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/app.ts",
+    "build": "tsc",
     "start": "node dist/app.js",
     "cli": "ts-node src/cli/index.ts"
   },
@@ -22,7 +21,6 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.3.3",
-    "concurrently": "^9.2.1",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
