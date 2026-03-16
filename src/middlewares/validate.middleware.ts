@@ -58,11 +58,9 @@ export const validarLogin = validate([
 ]);
 
 export const validarConsulta = validate([
-  body("pregunta").isString().trim().isLength({ min: 3, max: 2000 }),
-  body("historial").optional().isArray({ max: 40 }),
+  body("pregunta").isString().isLength({ min: 1, max: 2000 }),
 ]);
 
 export const validarConsultaStream = validate([
-  body("pregunta").isString().trim().isLength({ min: 3, max: 2000 }),
-  body("historial").optional().isArray({ max: 40 }),
+  body("pregunta").isString().isLength({ min: 1, max: 2000 }),
 ]);

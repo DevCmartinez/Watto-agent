@@ -15,6 +15,7 @@ export function authMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
+  // console.log('[AUTH] Header:', req.headers.authorization?.slice(0, 20));
   // Leer el token del header Authorization: Bearer TOKEN
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

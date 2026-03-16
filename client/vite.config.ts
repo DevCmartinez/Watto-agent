@@ -23,6 +23,14 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         // No reescribir la ruta — /api/auth/login sigue siendo /api/auth/login
+        // Estas opciones son criticas para que el streaming SSE funcione
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            // Desactivar buffering para SSE
+            proxyReq.setHeader('X-Accel-Buffering', 'no');
+          });
+        }
       },
     },
   },

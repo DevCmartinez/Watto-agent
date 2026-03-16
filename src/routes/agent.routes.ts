@@ -6,7 +6,7 @@ const router = Router();
 // Estado del agente (publico — para verificar que esta listo)
 router.get("/estado", agentCtrl.estado);
 // Consulta completa — requiere login
-router.post("/consultar",authMiddleware,validarConsulta,validate,agentCtrl.consultar,);
+router.post("/consultar", authMiddleware, validarConsulta, agentCtrl.consultar,);
 // Consulta con streaming — requiere login
-router.post("/stream",authMiddleware,validarConsultaStream,validate,agentCtrl.consultarStream,);
+router.post("/stream", authMiddleware, validarConsultaStream, agentCtrl.consultarStream,);
 export default router;

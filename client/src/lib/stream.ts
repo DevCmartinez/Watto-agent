@@ -59,10 +59,12 @@ export async function streamAgente(
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('');
+        const lines = buffer.split('\n\n');
         buffer = lines.pop() || ''; // Guardar linea incompleta
         for (const line of lines) {
-            const trimmed = line.replace(/^data: /, '').trim();
+            const dataLine = line.split('\n').find(l => l.startsWith('data:'));
+            if (!dataLine) continue;
+            const trimmed = dataLine.slice(5).trim(); // quitar "data:" 
             if (!trimmed) continue;
             try {
                 const evento: StreamEvent = JSON.parse(trimmed);
