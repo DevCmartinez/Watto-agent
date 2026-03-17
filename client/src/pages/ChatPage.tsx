@@ -46,7 +46,7 @@ export function ChatPage() {
 
     return (
         <div className="flex flex-col h-screen bg-(--bg)">
-            <Header onLimpiarChat={limpiarChat} />
+            <Header onLimpiarChat={limpiarChat} mensajes={mensajes} />
 
             {/* Lista de mensajes */}
             <div className="flex-1 overflow-y-auto px-4 py-6">

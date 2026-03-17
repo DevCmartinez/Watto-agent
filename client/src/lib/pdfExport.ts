@@ -4,51 +4,51 @@ import { type Mensaje, type PdfOptions } from '@/types';
 
 // Colores del tema del PDF
 const COLORES = {
-    azulOscuro: [13, 15, 26] as [number, number, number], // #0d0f1a
-    azulMedio: [15, 52, 96] as [number, number, number], // #0f3460
-    azulClaro: [227, 242, 253] as [number, number, number], // #e3f2fd
-    grisClaro: [245, 245, 250] as [number, number, number], // #f5f5fa
-    grisMedio: [200, 200, 210] as [number, number, number], // #c8c8d2
+    azulOscuro: [13, 15, 26] as [number, number, number],
+    azulMedio: [15, 52, 96] as [number, number, number],
+    azulClaro: [227, 242, 253] as [number, number, number],
+    grisClaro: [245, 245, 250] as [number, number, number],
+    grisSuave: [230, 230, 230] as [number, number, number],
+    grisMedio: [200, 200, 210] as [number, number, number],
     blanco: [255, 255, 255] as [number, number, number],
     negro: [30, 30, 40] as [number, number, number],
     verde: [39, 174, 96] as [number, number, number],
     rojo: [231, 76, 60] as [number, number, number],
 };
+
 const FUENTE_BASE = 10;
 const MARGEN_IZQ = 15;
 const MARGEN_DER = 15;
-const ANCHO_PAGINA = 210; // A4 en mm
-const ANCHO_UTIL = ANCHO_PAGINA - MARGEN_IZQ - MARGEN_DER;
+const ANCHO_PAGINA = 210;
+const ANCHO_UTIL = ANCHO_PAGINA - MARGEN_IZQ - MARGEN_DER; // 180mm
 
-// Convierte una linea de markdown a texto plano para el PDF
-// Elimina ** __ ` y otros marcadores
+// Elimina marcadores markdown y retorna texto plano
 function textoPlano(md: string): string {
     return md
-        .replace(/\*\*(.*?)\*\*/g, '$1')// **negrita**
-        .replace(/__(.*?)__/g, '$1')// __negrita__
-        .replace(/\*(.*?)\*/g, '$1')// *cursiva*
-        .replace(/_(.*?)_/g, '$1')// _cursiva_
-        .replace(/`(.*?)`/g, '$1')// `codigo`
-        .replace(/#{1,6}\s/g, '')// ## encabezados
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/__(.*?)__/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/_(.*?)_/g, '$1')
+        .replace(/`(.*?)`/g, '$1')
+        .replace(/#{1,6}\s/g, '')
         .trim();
 }
 
-// Detecta si una linea es fila de separador de tabla (|---|---|)
+// Detecta si una linea es separador de tabla (|---|---|)
 function esSeparadorTabla(linea: string): boolean {
     return /^\|[\s\-:|]+\|/.test(linea.trim());
 }
 
-// Parsea una fila de tabla markdown y retorna array de celdas
+// Parsea una fila de tabla y retorna array de celdas limpias
 function parsearFilaTabla(linea: string): string[] {
     return linea
         .trim()
-        .replace(/^\||\|$/g, '') // quitar pipes iniciales y finales
+        .replace(/^\||\|$/g, '')
         .split('|')
         .map(celda => textoPlano(celda.trim()));
 }
 
-// Renderiza un mensaje del agente en el PDF
-// Detecta tablas, listas, codigo y texto normal
+// Renderiza un mensaje completo en el PDF
 function renderizarMensaje(
     doc: jsPDF,
     texto: string,
@@ -56,33 +56,36 @@ function renderizarMensaje(
     esUsuario: boolean
 ): number {
     let y = yInicio;
-    const lineas = texto.split('');
+
+    // CORRECCIÓN CRÍTICA: split por '\n' no por ''
+    const lineas = texto.split('\n');
     let i = 0;
 
-    // Color del autor
+    // Etiqueta del autor
     doc.setFontSize(8);
     doc.setTextColor(...(esUsuario ? COLORES.azulMedio : COLORES.verde));
     doc.setFont('helvetica', 'bold');
     doc.text(esUsuario ? 'Tu:' : 'Watto:', MARGEN_IZQ, y);
     y += 5;
+
     doc.setTextColor(...COLORES.negro);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(FUENTE_BASE);
+
     while (i < lineas.length) {
         const linea = lineas[i];
         const lineaTrim = linea.trim();
 
-        // ■■ Saltar lineas vacias ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Lineas vacias
         if (!lineaTrim) { i++; y += 2; continue; }
 
-        // ■■ Encabezados ## ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Encabezados ## o #
         if (lineaTrim.startsWith('## ') || lineaTrim.startsWith('# ')) {
             if (y > 260) { doc.addPage(); y = 20; }
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(...COLORES.azulMedio);
-            const textoHeader = textoPlano(lineaTrim);
-            doc.text(textoHeader, MARGEN_IZQ, y);
+            doc.text(textoPlano(lineaTrim), MARGEN_IZQ, y);
             y += 7;
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(FUENTE_BASE);
@@ -90,9 +93,8 @@ function renderizarMensaje(
             i++; continue;
         }
 
-        // ■■ Detectar tabla markdown ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Tabla markdown — recolectar todas las filas
         if (lineaTrim.startsWith('|')) {
-            // Recolectar todas las filas de la tabla
             const filasTabla: string[] = [];
             while (i < lineas.length && lineas[i].trim().startsWith('|')) {
                 if (!esSeparadorTabla(lineas[i])) {
@@ -102,11 +104,8 @@ function renderizarMensaje(
             }
             if (filasTabla.length >= 2) {
                 const encabezados = parsearFilaTabla(filasTabla[0]);
-                const filasDatos
-                    = filasTabla.slice(1).map(parsearFilaTabla);
+                const filasDatos = filasTabla.slice(1).map(parsearFilaTabla);
                 if (y > 230) { doc.addPage(); y = 20; }
-
-                // Renderizar tabla con autoTable
                 autoTable(doc, {
                     head: [encabezados],
                     body: filasDatos,
@@ -114,23 +113,30 @@ function renderizarMensaje(
                     margin: { left: MARGEN_IZQ, right: MARGEN_DER },
                     tableWidth: ANCHO_UTIL,
                     styles: {
-                        fontSize: 8.5,
-                        cellPadding: 3,
+                        fontSize: 9,
+                        cellPadding: 4,
                         overflow: 'linebreak',
-                        lineColor: COLORES.grisMedio,
-                        lineWidth: 0.3,
+                        lineColor: COLORES.grisClaro,
+                        lineWidth: 0,
+                        font: 'helvetica',
                     },
                     headStyles: {
                         fillColor: COLORES.azulMedio,
                         textColor: COLORES.blanco,
                         fontStyle: 'bold',
-                        halign: 'left',
+                        fontSize: 10,
+                        halign: 'center',
+                        valign: 'middle',
+                        cellPadding: 4,
+                        lineWidth: 0,
                     },
                     alternateRowStyles: {
-                        fillColor: COLORES.grisClaro,
+                        fillColor: [205, 205, 205],
                     },
                     bodyStyles: {
                         textColor: COLORES.negro,
+                        halign: 'center',
+                        valign: 'middle',
                     },
                     didDrawPage: () => { },
                 });
@@ -139,27 +145,24 @@ function renderizarMensaje(
             continue;
         }
 
-        // ■■ Lista con guion o asterisco ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Lista con guion o asterisco
         if (lineaTrim.startsWith('- ') || lineaTrim.startsWith('* ')) {
             if (y > 270) { doc.addPage(); y = 20; }
             const contenido = textoPlano(lineaTrim.slice(2));
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(FUENTE_BASE);
-            // Punto decorativo
             doc.setFillColor(...COLORES.azulMedio);
             doc.circle(MARGEN_IZQ + 1.5, y - 1.5, 1, 'F');
-            // Texto con wrap
             const wrapped = doc.splitTextToSize(contenido, ANCHO_UTIL - 8);
             doc.text(wrapped, MARGEN_IZQ + 5, y);
-            y += wrapped.length * 5 + 1;
+            y += (Array.isArray(wrapped) ? wrapped.length : 1) * 5 + 1;
             i++; continue;
         }
 
-        // ■■ Lista numerada ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Lista numerada
         if (/^\d+\.\s/.test(lineaTrim)) {
             if (y > 270) { doc.addPage(); y = 20; }
-            const numero
-                = lineaTrim.match(/^(\d+)\./)?.[1] || '';
+            const numero = lineaTrim.match(/^(\d+)\./)?.[1] || '';
             const contenido = textoPlano(lineaTrim.replace(/^\d+\.\s/, ''));
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(...COLORES.azulMedio);
@@ -168,11 +171,11 @@ function renderizarMensaje(
             doc.setTextColor(...COLORES.negro);
             const wrapped = doc.splitTextToSize(contenido, ANCHO_UTIL - 8);
             doc.text(wrapped, MARGEN_IZQ + 6, y);
-            y += wrapped.length * 5 + 1;
+            y += (Array.isArray(wrapped) ? wrapped.length : 1) * 5 + 1;
             i++; continue;
         }
 
-        // ■■ Bloque de codigo ```...``` ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Bloque de codigo ```...```
         if (lineaTrim.startsWith('```')) {
             const codigoLineas: string[] = [];
             i++;
@@ -180,8 +183,7 @@ function renderizarMensaje(
                 codigoLineas.push(lineas[i]);
                 i++;
             }
-            i++; // saltar el ``` de cierre
-
+            i++;
             if (codigoLineas.length > 0) {
                 if (y > 250) { doc.addPage(); y = 20; }
                 const alturaCodigo = codigoLineas.length * 5 + 8;
@@ -201,98 +203,86 @@ function renderizarMensaje(
             continue;
         }
 
-        // ■■ Texto normal con negritas ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+        // Texto normal
         if (y > 270) { doc.addPage(); y = 20; }
         const textoNormal = textoPlano(lineaTrim);
         if (textoNormal) {
-            const wrapped = doc.splitTextToSize(textoNormal, ANCHO_UTIL);
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(FUENTE_BASE);
             doc.setTextColor(...COLORES.negro);
+            const wrapped = doc.splitTextToSize(textoNormal, ANCHO_UTIL);
             doc.text(wrapped, MARGEN_IZQ, y);
-            y += wrapped.length * 5.5;
+            y += (Array.isArray(wrapped) ? wrapped.length : 1) * 5.5;
         }
         i++;
     }
-    return y + 4; // espacio despues del mensaje
+
+    return y + 4;
 }
 
-// Funcion principal — llamar desde el boton del Header
+// Funcion principal — exportar la conversacion a PDF
 export function exportarPDF(
     mensajes: Mensaje[],
     opciones: PdfOptions
 ): void {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // ■■ Encabezado de la primera pagina ■■■■■■■■■■■■■■■■■■■■■■■■■■
-    // Franja azul oscura de fondo
+    // Encabezado — franja azul oscura
     doc.setFillColor(...COLORES.azulOscuro);
     doc.rect(0, 0, ANCHO_PAGINA, 32, 'F');
 
-    // Titulo
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
     doc.setTextColor(...COLORES.blanco);
     doc.text(opciones.titulo, MARGEN_IZQ, 13);
 
-    // Subtitulo
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...COLORES.grisMedio);
     doc.text(opciones.subtitulo, MARGEN_IZQ, 21);
 
-    // Fecha y hora de exportacion
     const ahora = new Date().toLocaleString('es-CO', {
         dateStyle: 'long', timeStyle: 'short'
     });
     doc.text(`Exportado: ${ahora}`, MARGEN_IZQ, 28);
 
-    // Linea separadora debajo del encabezado
     doc.setDrawColor(...COLORES.azulMedio);
     doc.setLineWidth(0.5);
     doc.line(0, 32, ANCHO_PAGINA, 32);
-    let y = 42; // Posicion Y inicial del contenido
 
-    // ■■ Renderizar cada mensaje ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+    let y = 42;
+
+    // Renderizar mensajes
     const mensajesValidos = mensajes.filter(
         m => !m.cargando && !m.error && m.contenido.trim()
     );
+
     mensajesValidos.forEach((mensaje, indice) => {
-        // Separador entre mensajes (excepto el primero)
         if (indice > 0) {
-            doc.setDrawColor(...COLORES.grisMedio);
-            doc.setLineWidth(0.2);
+            doc.setDrawColor(...COLORES.grisSuave);
+            doc.setLineWidth(0.1);
             doc.line(MARGEN_IZQ, y, ANCHO_PAGINA - MARGEN_DER, y);
             y += 5;
         }
-
-        // Nueva pagina si ya no hay espacio
-        if (y > 265) {
-            doc.addPage();
-            y = 20;
-        }
-        y = renderizarMensaje(
-            doc,
-            mensaje.contenido,
-            y,
-            mensaje.rol === 'user'
-        );
+        if (y > 265) { doc.addPage(); y = 20; }
+        y = renderizarMensaje(doc, mensaje.contenido, y, mensaje.rol === 'user');
     });
 
-    // ■■ Pie de pagina en todas las paginas ■■■■■■■■■■■■■■■■■■■■■■■■
+    // Pie de pagina en todas las paginas
     const totalPaginas = doc.getNumberOfPages();
     for (let pag = 1; pag <= totalPaginas; pag++) {
         doc.setPage(pag);
-        doc.setFillColor(...COLORES.grisClaro);
+        doc.setFillColor(...COLORES.grisMedio);
         doc.rect(0, 287, ANCHO_PAGINA, 10, 'F');
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
-        doc.setTextColor(...COLORES.grisMedio);
+        doc.setTextColor(...COLORES.negro);
         doc.text('Generado por Watto Agent', MARGEN_IZQ, 293);
-        doc.text(`Pagina ${pag} de ${totalPaginas}`,
-            ANCHO_PAGINA - MARGEN_DER - 20, 293);
+        doc.text(
+            `Pagina ${pag} de ${totalPaginas}`,
+            ANCHO_PAGINA - MARGEN_DER - 20, 293
+        );
     }
 
-    // ■■ Descargar el archivo ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
     doc.save(opciones.nombreArchivo);
 }
