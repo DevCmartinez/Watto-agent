@@ -21,3 +21,9 @@ export interface EstadoAgente {
     nombre: string;
     promptLength: number;
 }
+// Opciones para la exportacion a PDF
+export interface PdfOptions {
+    titulo: string; // Titulo del documento en el encabezado
+    subtitulo: string; // Subtitulo — ej: nombre del usuario o fecha
+    nombreArchivo: string; // Nombre del archivo descargado
+}

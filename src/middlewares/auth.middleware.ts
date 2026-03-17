@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { JwtPayload } from "../models/usuario.model";
+
 // Extender el tipo Request de Express para incluir el usuario autenticado
 declare global {
   namespace Express {
@@ -15,7 +16,7 @@ export function authMiddleware(
   res: Response,
   next: NextFunction,
 ): void {
-  // console.log('[AUTH] Header:', req.headers.authorization?.slice(0, 20));
+
   // Leer el token del header Authorization: Bearer TOKEN
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {

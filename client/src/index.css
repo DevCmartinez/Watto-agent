@@ -60,3 +60,42 @@ body {
   background: var(--border);
   border-radius: 3px;
 }
+
+/* ■■ Estilos globales del markdown en el chat ■■ */
+
+/* Contenedor del markdown — resetear estilos base */
+.markdown-content {
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+/* Asegurar que el ultimo elemento no tenga margen inferior */
+.markdown-content>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Tablas — asegurar que respetan el ancho del contenedor */
+.markdown-content table {
+  width: 100%;
+  table-layout: auto;
+}
+
+/* Scrollbar horizontal en tablas anchas */
+.markdown-content .overflow-x-auto::-webkit-scrollbar {
+  height: 4px;
+}
+
+.markdown-content .overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.markdown-content .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+/* Codigo — fuente monospace consistente */
+.markdown-content code,
+.markdown-content pre {
+  font-family: 'Courier New', Courier, monospace;
+}
