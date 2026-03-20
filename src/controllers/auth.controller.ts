@@ -13,8 +13,8 @@ export async function login(
     const resultado = await authService.login(email, password);
     sendSuccess(res, resultado, "Login exitoso");
   } catch (error: any) {
-    // Credenciales invalidas -> 401, otros errores -> middleware
-    if (error.message === "Credenciales invalidas") {
+    // Si es un error de autenticacion (401), enviamos el mensaje especifico
+    if (error.statusCode === 401) {
       sendError(res, error.message, 401);
     } else {
       next(error);
@@ -32,8 +32,9 @@ export async function registro(
     const resultado = await authService.registrar({ nombre, email, password });
     sendSuccess(res, resultado, "Usuario registrado exitosamente", 201);
   } catch (error: any) {
-    if (error.message === "El email ya esta registrado") {
-      sendError(res, error.message, 409);
+    // Si es un error de negocio (con statusCode definido), usamos ese codigo
+    if (error.statusCode) {
+      sendError(res, error.message, error.statusCode);
     } else {
       next(error);
     }

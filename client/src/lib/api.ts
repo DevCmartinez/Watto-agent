@@ -42,8 +42,8 @@ async function request<T>(
         ...options,
         headers,
     });
-    // Si la respuesta es 401, cerrar sesion automaticamente
-    if (response.status === 401) {
+    // Si la respuesta es 401 y no es un login, cerrar sesion automaticamente
+    if (response.status === 401 && endpoint !== '/auth/login') {
         useAuthStore.getState().cerrarSesion();
         window.location.href = '/login';
         throw new ApiError(401, 'Sesion expirada. Por favor inicia sesion de nuevo.');
