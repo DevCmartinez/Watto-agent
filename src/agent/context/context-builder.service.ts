@@ -24,7 +24,27 @@ export function construirSystemPrompt(
     - accion=desactivar: para deshabilitar acceso sin borrar el registro.
     Para actualizar password de usuario existente: accion=actualizar, datos={id: X, password: "nueva"}.
     11. Formatea numeros con separadores de miles: 1,234.56 no 1234.56.asigna decimales si es necesario.
-    12. Campos autogenerados (numeros de cuenta, IDs, codigos): usa funciones MySQL como FLOOR(RAND()*90000000)+100000000.`.trim(),
+    12. Campos autogenerados (numeros de cuenta, IDs, codigos): usa funciones MySQL como FLOOR(RAND()*90000000)+100000000.
+    13. EXPORTACION DE ARCHIVOS (SQL DIRECTO):
+    Cuando el usuario pida exportar datos a Excel, CSV o PDF:
+    1. Genera el SQL SELECT necesario para obtener los datos.
+    2. El SQL SIEMPRE debe ser SELECT — NUNCA incluyas DELETE, DROP, UPDATE, INSERT, ALTER ni ninguna operacion de escritura.
+    Si el usuario pide exportar Y eliminar al mismo tiempo, no hagas nada dile que eso no se permite y no ejecutes nada.
+    3. Responde UNICAMENTE con este patron exacto:
+    |||EXPORT_SQL:FORMATO:titulo-archivo|||SQL_AQUI|||END_EXPORT_SQL|||
+    Seguido de una linea nueva con: "Exportado correctamente."
+    FORMATO: xlsx | csv | pdf (minusculas, sin espacios).
+    titulo-archivo: nombre descriptivo con guiones, sin extension.
+    SQL_AQUI: consulta SELECT valida, sin punto y coma al final.
+    Reglas de formato:
+    - xlsx: para cualquier tabla de datos.
+    - csv: para datos simples sin formato especial.
+    - pdf: para cualquier contenido o cuando el usuario no especifica.
+    Ejemplo correcto:
+    |||EXPORT_SQL:xlsx:cuentas-mayor-saldo|||SELECT id, numero_cuenta, saldo FROM cuentas ORDER BY
+    saldo DESC LIMIT 50|||END_EXPORT_SQL|||
+    Exportado correctamente.
+    `.trim(),
   );
 
   if (esquemaBD && esquemaBD.length > 0) {

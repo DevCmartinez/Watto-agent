@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { streamAgente, type MensajeHistorial } from '@/lib/stream';
 import { type Mensaje } from '@/types';
+import { descargarExportacion } from '@/lib/agentExportBridge';
+
 
 const genId = () => Math.random().toString(36).slice(2);
 
@@ -48,9 +50,11 @@ export function useChat() {
                     ));
                     setToolActivo(null);
                 },
+
                 onTool: (nombre) => {
                     setToolActivo(nombre);
                 },
+
                 onFin: (tokens) => {
                     setMensajes(prev => prev.map(m =>
                         m.id === idAgente ? { ...m, tokens, cargando: false } : m
@@ -58,6 +62,7 @@ export function useChat() {
                     setCargando(false);
                     setToolActivo(null);
                 },
+
                 onError: (mensaje) => {
                     setMensajes(prev => prev.map(m =>
                         m.id === idAgente
@@ -67,6 +72,10 @@ export function useChat() {
                     setCargando(false);
                     setToolActivo(null);
                 },
+
+                onExportUrl: (url, formato, titulo) => {
+                    descargarExportacion(url, formato, titulo);
+                }
             },
             abortRef.current.signal
         );

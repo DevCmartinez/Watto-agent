@@ -1,14 +1,19 @@
 import { useAuthStore } from '@/stores/authStore';
 
 // Tipos de eventos que envia el backend
-export type StreamEventType = 'texto' | 'tool' | 'fin' | 'error';
+export type StreamEventType = 'texto' | 'tool' | 'fin' | 'error' | 'export_url';
 
 export interface StreamEvent {
     tipo: StreamEventType;
-    chunk?: string; // Para tipo='texto'
-    nombre?: string; // Para tipo='tool'
-    tokens?: number; // Para tipo='fin'
-    mensaje?: string; // Para tipo='error'
+    chunk?: string;// Para tipo='texto'
+    nombre?: string;// Para tipo='tool'
+    tokens?: number;// Para tipo='fin'
+    mensaje?: string;// Para tipo='error'
+
+    // Campos para tipo='export_url':
+    url?: string;// URL del endpoint de descarga
+    formato?: string;// xlsx | csv | pdf
+    titulo?: string;// Nombre del archivo
 }
 
 // Mensaje del historial de conversacion
@@ -23,6 +28,7 @@ export interface StreamCallbacks {
     onTool: (nombre: string) => void; // El agente esta usando un tool
     onFin: (tokens: number) => void; // Respuesta completa
     onError: (mensaje: string) => void; // Error
+    onExportUrl: (url: string, formato: string, titulo: string) => void;
 }
 
 // Funcion principal para hacer streaming al agente
@@ -80,6 +86,11 @@ export async function streamAgente(
                         break;
                     case 'error':
                         callbacks.onError(evento.mensaje ?? 'Error desconocido');
+                        break;
+                    case 'export_url':
+                        if (evento.url && evento.formato && evento.titulo) {
+                            callbacks.onExportUrl(evento.url, evento.formato, evento.titulo);
+                        }
                         break;
                 }
             } catch {

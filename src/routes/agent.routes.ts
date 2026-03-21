@@ -1,5 +1,6 @@
 import { Router } from "express";
 import * as agentCtrl from "../controllers/agent.controller";
+import * as exportCtrl from "../controllers/export.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validarConsulta, validarConsultaStream, validate } from "../middlewares/validate.middleware";
 const router = Router();
