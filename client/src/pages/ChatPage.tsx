@@ -71,33 +71,42 @@ export function ChatPage() {
             ultimoMensaje.contenido.toLowerCase().includes('confirmas esta'));
 
     return (
-        <div className="flex flex-col h-screen bg-gradient-premium overflow-hidden transition-all duration-500">
+        <div className="flex flex-col h-screen bg-gradient-premium overflow-hidden transition-all duration-500 relative">
+
+            {/* Orbes de Fondo Dinámicos */}
+            <div className="orb w-80 h-80 bg-primary/10 top-[-10%] right-[-10%] opacity-40" />
+            <div className="orb w-64 h-64 bg-accent/5 bottom-[10%] left-[-5%] opacity-30 [animation-delay:-7s]" />
+            
             {/* Cabecera persistente (client/src/components/layout/Header.tsx) */}
             <Header onLimpiarChat={limpiarChat} mensajes={mensajes} />
 
             {/* Area de scroll de Mensajes */}
-            <div className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar relative z-10">
                 <div className="max-w-4xl mx-auto">
                     
                     {/* Pantalla de bienvenida (Solo si no hay historial) */}
                     {mensajes.length === 0 && (
                         <div className="text-center mt-24 animate-fade-in">
-                            <div className="w-20 h-20 rounded-3xl bg-(--bubble-user) shadow-xl shadow-(--bubble-user)/20 flex items-center justify-center mx-auto mb-6 transform hover:rotate-6 transition-transform">
-                                <Bot size={40} className="text-(--bubble-user-text)" />
+                            <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-[32px] bg-primary shadow-2xl shadow-primary/30 mb-8 group transition-all hover:rotate-3">
+                                <div className="absolute inset-0 rounded-[32px] bg-linear-to-tr from-accent/30 to-transparent animate-pulse" />
+                                <Bot size={48} className="text-white relative z-10" />
                             </div>
-                            <h2 className="text-3xl font-bold text-(--text) mb-3 tracking-tight">
-                                Workspace Autónomo
+                            <h2 className="text-4xl font-black text-(--text) mb-4 tracking-tighter">
+                                Operation Center
                             </h2>
-                            <p className="text-(--text-muted) text-md max-w-sm mx-auto leading-relaxed">
-                                Bienvenido al centro de control empresarial. Puedo gestionar bases de datos, APIs y reportes avanzados por ti.
-                                <br />
-                                <span className="text-xs font-mono mt-6 block opacity-40 uppercase tracking-widest font-bold">Listando recursos del sistema...</span>
+                            <p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed border-l-2 border-accent/20 pl-6 italic">
+                                Sistema de inteligencia autónoma listo para el análisis de datos masivos y gestión de infraestructura.
                             </p>
+                            <div className="mt-12 flex justify-center gap-3 opacity-30">
+                                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0s' }} />
+                                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0.2s' }} />
+                                <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0.4s' }} />
+                            </div>
                         </div>
                     )}
 
                     {/* Lista dinámica de burbujas de mensaje */}
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {mensajes.map((m) => (
                             <div key={m.id} className="animate-fade-in">
                                 <MessageBubble mensaje={m} />
@@ -108,19 +117,18 @@ export function ChatPage() {
                     {/* Indicador de Herramientas Activas (SQL, API, etc) */}
                     {toolActivo && (
                         <div className="flex gap-4 mb-4 mt-8 animate-pulse">
-                            <div className="w-10 h-10 rounded-xl bg-(--bg-surface) border border-(--border)/50 flex items-center justify-center shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-accent/20 flex items-center justify-center shadow-lg backdrop-blur-md">
                                 <Sparkles size={18} className="text-accent" />
                             </div>
-                            <div className="px-5 py-3 rounded-2xl bg-(--bg-surface)/30 border border-(--border)/30 text-(--text-muted) text-sm font-semibold flex items-center gap-3 backdrop-blur-sm">
+                            <div className="px-6 py-3 rounded-2xl glass border border-white/10 text-(--text-muted) text-[10px] font-black uppercase tracking-widest flex items-center gap-4">
                                 <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
                                 </span>
-                                Estamos procesando su solicitud...
+                                Procesando flujo de datos...
                             </div>
                         </div>
                     )}
-
 
                     <div ref={bottomRef} className="h-6" />
                 </div>
@@ -128,28 +136,33 @@ export function ChatPage() {
 
             {/* Panel de Confirmación Contextual - Diseño Glass */}
             {mostrarConfirmacion && (
-                <div className="border-t border-(--border)/30 glass px-6 py-5 animate-fade-in z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-                    <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                                <ShieldCheck size={18} className="text-green-500" />
+                <div className="border-t border-white/10 glass px-6 py-6 animate-fade-in z-20 shadow-2xl">
+                    <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-green-500/20 flex items-center justify-center shadow-inner">
+                                <ShieldCheck size={20} className="text-green-500" />
                             </div>
-                            <p className="text-sm font-bold text-(--text) tracking-tight">
-                                El agente requiere su aprobación explícita para continuar.
-                            </p>
+                            <div>
+                                <p className="text-xs font-black text-(--text) uppercase tracking-wider">
+                                    Gatekeeper Authorization
+                                </p>
+                                <p className="text-[10px] text-(--text-muted) font-bold">
+                                    Se requiere su firma digital para proceder.
+                                </p>
+                            </div>
                         </div>
                         <div className="flex gap-3 w-full sm:w-auto">
                             <button
                                 onClick={() => enviarMensaje('no')}
-                                className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 text-xs font-black hover:bg-red-500/10 transition-all uppercase tracking-widest"
+                                className="flex-1 sm:flex-none px-6 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 text-[10px] font-black hover:bg-red-500/20 transition-all uppercase tracking-widest"
                             >
-                                Cancelar acción
+                                Rehusar
                             </button>
                             <button
                                 onClick={() => enviarMensaje('si')}
-                                className="flex-1 sm:flex-none px-8 py-2.5 rounded-xl bg-green-600 text-white text-xs font-black shadow-lg shadow-green-600/30 hover:bg-green-700 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest"
+                                className="flex-1 sm:flex-none px-10 py-3 rounded-xl bg-primary text-white text-[10px] font-black shadow-xl shadow-primary/40 hover:scale-105 active:scale-95 transition-all uppercase tracking-widest border border-white/10"
                             >
-                                Confirmar y Ejecutar
+                                Autorizar
                             </button>
                         </div>
                     </div>
@@ -157,57 +170,58 @@ export function ChatPage() {
             )}
 
             {/* Area de Entrada Premium */}
-            <div className="border-t border-(--border)/20 glass p-6 sticky bottom-0 z-10">
+            <div className="p-6 sticky bottom-0 z-30">
                 <div className="max-w-4xl mx-auto">
-                    <div className="flex gap-4 items-end bg-(--input-bg)/30 rounded-2xl p-2 border border-(--border)/50 focus-within:border-(--bubble-user)/60 focus-within:ring-4 focus-within:ring-(--bubble-user)/5 transition-all shadow-sm backdrop-blur-md">
-                        <textarea
-                            ref={textareaRef}
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            onInput={handleInput}
-                            placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "Solicite reporte, consulta SQL o análisis..."}
-                            rows={1}
-                            disabled={cargando || mostrarConfirmacion}
-                            className={clsx(
-                                'flex-1 resize-none bg-transparent',
-                                'text-(--text) placeholder:text-(--text-muted)/50',
-                                'px-5 py-3.5 text-sm font-medium leading-relaxed outline-none',
-                                'disabled:opacity-40 transition-opacity'
-                            )}
-                        />
-                        <div className="pb-1.5 pr-1.5">
-                            {cargando ? (
-                                <button
-                                    onClick={cancelar}
-                                    className="p-3.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-all shadow-sm group"
-                                    title="Interrumpir proceso"
-                                >
-                                    <StopCircle size={22} className="group-hover:scale-110 transition-transform" />
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleSend}
-                                    disabled={!input.trim() || mostrarConfirmacion}
-                                    className="p-3.5 rounded-xl bg-(--bubble-user) text-(--bubble-user-text) disabled:opacity-20 hover:shadow-xl hover:shadow-(--bubble-user)/40 hover:scale-105 active:scale-90 transition-all group"
-                                    title="Enviar instrucción"
-                                >
-                                    <Send size={22} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                                </button>
-                            )}
+                    <div className="glass rounded-[32px] p-2 border border-white/20 shadow-2xl transition-all">
+
+                        <div className="flex gap-4 items-end bg-white/5 rounded-[24px]">
+                            <textarea
+                                ref={textareaRef}
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                onInput={handleInput}
+                                placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "Command input..."}
+                                rows={1}
+                                disabled={cargando || mostrarConfirmacion}
+                                className={clsx(
+                                    'flex-1 resize-none bg-transparent',
+                                    'text-(--text) placeholder:text-(--text-muted)/40',
+                                    'px-6 py-4.5 text-sm font-medium leading-relaxed outline-none',
+                                    'disabled:opacity-40 transition-opacity'
+                                )}
+                            />
+                            <div className="pb-2 pr-2">
+                                {cargando ? (
+                                    <button
+                                        onClick={cancelar}
+                                        className="p-4 rounded-2xl bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all shadow-lg backdrop-blur-xl"
+                                    >
+                                        <StopCircle size={20} className="animate-spin-slow" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={!input.trim() || mostrarConfirmacion}
+                                        className="p-4 rounded-2xl bg-primary text-white disabled:opacity-20 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 active:scale-90 transition-all group"
+                                    >
+                                        <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                     
                     {/* Footer del chat */}
-                    <div className="flex justify-between items-center px-4 mt-4">
-                        <div className="flex items-center gap-2 opacity-30">
-                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <p className="text-[10px] text-(--text-muted) uppercase tracking-[0.2em] font-black">
-                                Watto Unified Console
+                    <div className="flex justify-between items-center px-6 mt-4 opacity-40">
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                            <p className="text-[9px] text-(--text-muted) uppercase tracking-[0.3em] font-black">
+                                WATTO SECURE LINK ACTIVE
                             </p>
                         </div>
-                        <p className="text-[10px] text-(--text-muted) font-bold opacity-50">
-                            CMD + Enter para saltar línea
+                        <p className="text-[9px] text-(--text-muted) font-black">
+                            V 0.8.2-ALPHA
                         </p>
                     </div>
                 </div>

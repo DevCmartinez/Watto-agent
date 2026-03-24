@@ -40,26 +40,33 @@ export function LoginPage() {
     const onSubmit = (data: LoginForm) => login(data);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-premium p-6 overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-premium p-6 overflow-hidden relative">
+            {/* Orbes de Fondo Animados */}
+            <div className="orb w-64 h-64 bg-primary/20 top-[-5%] left-[-5%] opacity-60" />
+            <div className="orb w-96 h-96 bg-accent/10 bottom-[-10%] right-[-10%] opacity-40 [animation-delay:-5s]" />
+            <div className="orb w-48 h-48 bg-primary/30 top-[20%] right-[10%] opacity-30 [animation-delay:-10s]" />
+
             {/* Control Flotante de Apariencia */}
-            <div className="fixed top-6 right-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="fixed top-6 right-6 animate-fade-in z-50" style={{ animationDelay: '0.1s' }}>
                 <ThemeToggle />
             </div>
 
-            <div className="w-full max-w-lg animate-fade-in">
+            <div className="w-full max-w-lg animate-fade-in relative z-10">
                 {/* Contenedor Principal con efecto Glassmorphism */}
-                <div className="glass rounded-3xl p-8 sm:p-12 transition-all duration-500 hover:scale-[1.01]">
+                <div className="glass rounded-[40px] p-8 sm:p-12 transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-accent/10">
                     
-                    {/* Encabezado Corporativo */}
+                    {/* Encabezado Corporativo Premium */}
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-(--bubble-user) shadow-lg shadow-(--bubble-user)/30 mb-6 group transition-transform hover:rotate-6">
-                            <ShieldCheck className="w-10 h-10 text-(--bubble-user-text)" />
+                        <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-primary shadow-2xl shadow-primary/40 mb-8 group transition-all hover:rotate-6">
+                            <div className="absolute inset-0 rounded-3xl bg-linear-to-tr from-accent/40 to-transparent animate-pulse" />
+                            <ShieldCheck className="w-12 h-12 text-white relative z-10" />
                         </div>
-                        <h1 className="text-3xl font-extrabold text-(--text) tracking-tight">
-                            {import.meta.env.VITE_AGENT_NAME || 'Watto Agent'}
+                        <h1 className="text-4xl font-black text-(--text) tracking-tighter mb-2">
+                            {import.meta.env.VITE_AGENT_NAME || 'WATTO'}
                         </h1>
-                        <p className="text-(--text-muted) text-sm mt-3 uppercase tracking-widest font-semibold">
-                            Acceso Institucional
+                        <div className="h-1 w-12 bg-accent mx-auto rounded-full mb-4" />
+                        <p className="text-(--text-muted) text-[10px] uppercase tracking-[0.3em] font-black opacity-60">
+                            Enterprise Intelligence Suite
                         </p>
                     </div>
 
@@ -68,72 +75,74 @@ export function LoginPage() {
                         
                         {/* Campo: Correo Electrónico */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-(--text-muted) uppercase ml-1">
-                                Identificación de Usuario
+                            <label className="text-[10px] font-black text-(--text-muted) uppercase ml-1 tracking-wider opacity-60">
+                                Identifier
                             </label>
                             <div className="relative group">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-(--bubble-user)" />
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-accent" />
                                 <input
                                     {...register('email')}
                                     type="email"
-                                    placeholder="usuario@compañia.com"
+                                    placeholder="name@company.com"
                                     disabled={loginCargando}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-(--border) bg-(--input-bg)/50 text-(--text) placeholder:text-(--text-muted)/50 focus:outline-none focus:ring-2 focus:ring-(--bubble-user)/50 focus:bg-(--input-bg) transition-all"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl outline-none"
                                 />
                             </div>
                             {errors.email && (
-                                <p className="text-red-500 text-xs font-medium mt-1 animate-fade-in">{errors.email.message}</p>
+                                <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 animate-fade-in">{errors.email.message}</p>
                             )}
                         </div>
 
                         {/* Campo: Contraseña */}
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-(--text-muted) uppercase ml-1">
-                                Credencial de Seguridad
+                            <label className="text-[10px] font-black text-(--text-muted) uppercase ml-1 tracking-wider opacity-60">
+                                Security Token
                             </label>
                             <div className="relative group">
-                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-(--bubble-user)" />
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-accent" />
                                 <input
                                     {...register('password')}
                                     type="password"
                                     placeholder="••••••••••••"
                                     disabled={loginCargando}
-                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-(--border) bg-(--input-bg)/50 text-(--text) placeholder:text-(--text-muted)/50 focus:outline-none focus:ring-2 focus:ring-(--bubble-user)/50 focus:bg-(--input-bg) transition-all"
+                                    className="w-full pl-12 pr-4 py-4 rounded-2xl outline-none"
                                 />
                             </div>
                             {errors.password && (
-                                <p className="text-red-500 text-xs font-medium mt-1 animate-fade-in">{errors.password.message}</p>
+                                <p className="text-red-500 text-[10px] font-bold mt-1 ml-1 animate-fade-in">{errors.password.message}</p>
                             )}
                         </div>
 
                         {/* Alerta de Error del Servidor */}
                         {loginError && (
-                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-fade-in">
+                            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold animate-fade-in flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                                 {loginError}
                             </div>
                         )}
 
                         {/* Botón de Acción Principal */}
-                        <div className="pt-2">
+                        <div className="pt-4">
                             <Button
                                 type="submit"
                                 cargando={loginCargando}
-                                className="w-full shadow-lg shadow-(--bubble-user)/20 transition-transform active:scale-95"
+                                className="w-full py-6 rounded-2xl shadow-xl shadow-primary/20 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all bg-primary"
                                 tamano="lg"
                             >
-                                Ingresar al Sistema
+                                Secure Login
                             </Button>
                         </div>
                     </form>
 
                     {/* Pie de página del Login */}
-                    <div className="mt-10 pt-6 border-t border-(--border)/50 text-center">
-                        <p className="text-xs text-(--text-muted) italic">
-                            Sistema de Inteligencia Autónoma — Watto v0.0.1
+                    <div className="mt-12 pt-8 border-t border-(--border)/30 text-center">
+                        <p className="text-[9px] text-(--text-muted) font-bold uppercase tracking-[0.2em] opacity-40">
+                            Watto AI Autonomous Core v0.8.2
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     );
+
 }

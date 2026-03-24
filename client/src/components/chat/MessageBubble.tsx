@@ -21,12 +21,13 @@ export function MessageBubble({ mensaje }: Props) {
 
             {/* Burbuja */}
             <div className={clsx(
-                'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
+                'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed bubble-shadow',
                 esUsuario
-                    ? 'bg-(--bubble-user) text-(--bubble-user-text) rounded-tr-sm'
-                    : 'bg-(--bubble-bot) text-(--bubble-bot-text) rounded-tl-sm',
+                    ? 'bg-(--bubble-user) text-(--bubble-user-text) rounded-tr-sm bubble-user-glow'
+                    : 'bg-(--bubble-bot) text-(--bubble-bot-text) rounded-tl-sm bubble-bot-glow',
                 mensaje.error && 'border border-red-500/30 bg-red-500/10 text-red-400'
             )}>
+
                 {/* Indicador de carga — tres puntos animados */}
                 {mensaje.cargando ? (
                     <span className="flex gap-1 items-center py-1">
