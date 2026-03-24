@@ -32,7 +32,15 @@ export interface StreamCallbacks {
 }
 
 // Funcion principal para hacer streaming al agente
+/**
+ * @name streamAgente
+ * @origin [client/src/lib/stream.ts]
+ * @calledBy [client/src/hooks/useChat.ts]
+ * @description Implementa la lógica SSE para recibir y procesar chunks de un servidor.
+ * Escucha eventos 'texto', 'tool', 'fin', 'error' y 'export_url'.
+ */
 export async function streamAgente(
+
     pregunta: string,
     historial: MensajeHistorial[],
     callbacks: StreamCallbacks,

@@ -24,7 +24,14 @@ export async function consultar(req: Request, res: Response, next: NextFunction)
 }
 
 // POST /api/agent/stream
+/**
+ * @name consultarStream
+ * @origin [src/controllers/agent.controller.ts]
+ * @calledBy [src/routes/agent.routes.ts]
+ * @description Recibe peticiones de stream, valida y llama a `consultarAgenteStreaming`.
+ */
 export async function consultarStream(req: Request, res: Response, next: NextFunction): Promise<void> {
+
     try {
         const { pregunta, historial = [] } = req.body;
         if (!pregunta || !pregunta.trim()) {

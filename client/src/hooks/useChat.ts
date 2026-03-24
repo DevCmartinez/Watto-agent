@@ -6,7 +6,14 @@ import { descargarExportacion } from '@/lib/agentExportBridge';
 
 const genId = () => Math.random().toString(36).slice(2);
 
+/**
+ * @origin [client/src/hooks/useChat.ts]
+ * @calledBy [ChatPage.tsx] para manejar la interfaz de conversación.
+ * @description Hook que gestiona el estado del chat (mensajes, carga, tools activos),
+ * realiza el streaming hacia el backend y descarga las exportaciones detectadas.
+ */
 export function useChat() {
+
     const [mensajes, setMensajes] = useState<Mensaje[]>([]);
     const [cargando, setCargando] = useState(false);
     const [toolActivo, setToolActivo] = useState<string | null>(null);

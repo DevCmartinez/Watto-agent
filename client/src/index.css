@@ -15,6 +15,7 @@
   --bg: #ffffff;
   --bg-surface: #f1f5f9;
   --bg-card: #ffffff;
+  --bg-card-rgb: 255, 255, 255;
   --text: #0d0d1a;
   --text-muted: #64748b;
   --border: #e2e8f0;
@@ -30,6 +31,7 @@
   --bg: #0d0d1a;
   --bg-surface: #16213e;
   --bg-card: #1a1a2e;
+  --bg-card-rgb: 26, 26, 46;
   --text: #f1f5f9;
   --text-muted: #94a3b8;
   --border: #1e293b;
@@ -94,7 +96,22 @@ body {
   border-radius: 2px;
 }
 
-/* Codigo — fuente monospace consistente */
+/* ■■ Efectos Premium ■■ */
+.glass {
+  background-color: rgba(var(--bg-card-rgb, 255, 255, 255), 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass {
+  background-color: rgba(26, 26, 46, 0.7);
+}
+
+/* Transiciones suaves */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
 .markdown-content code,
 .markdown-content pre {
   font-family: 'Courier New', Courier, monospace;

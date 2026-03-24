@@ -10,7 +10,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { errorMiddleware } from "./middlewares/error.middleware";
 
+/**
+ * @origin [src/app.ts]
+ * @calledBy Scripts de npm (dev, start) en el package.json de la raíz.
+ * @description Punto de entrada principal del backend. Configura middlewares de seguridad,
+ * rutas de la API, conexión a la base de datos e inicialización del agente inteligente.
+ */
 const app = express();
+
 
 // ■■ Middlewares de seguridad ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
 app.use(helmet()); // Cabeceras de seguridad HTTP

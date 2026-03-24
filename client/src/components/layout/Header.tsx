@@ -35,7 +35,7 @@ export function Header({ onLimpiarChat, mensajes }: HeaderProps) {
         });
     };
     return (
-        <header className="h-14 border-b border-(--border) bg-(--bg-card) flex items-center justify-between px-4">
+        <header className="h-14 border-b border-(--border) glass sticky top-0 z-50 flex items-center justify-between px-4">
 
             {/* Nombre del agente */}
             <div className="flex items-center gap-2">

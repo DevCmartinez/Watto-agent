@@ -11,7 +11,14 @@ import { usuarioExecutorTool } from "../../agent/tools/usuario-executor.tool";
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * @origin [src/agent/tools/autonomus-agent.service.ts]
+ * @calledBy [src/controllers/agent.controller.ts] y [src/app.ts]
+ * @description Lógica central del Agente. Maneja el descubrimiento de esquemas,
+ * la creación del sistema de prompts y la interacción con modelos de IA (OpenAI/Google).
+ */
 let systemPrompt: string | null = null;
+
 export let listo: boolean = false;
 
 function getTools(): Record<string, any> {
@@ -68,7 +75,13 @@ function guardarCache(prompt: string): void {
   }
 }
 
+/**
+ * @name inicializarAgente
+ * @calledBy [src/app.ts] durante el arranque del servidor.
+ * @description Carga el cache del esquema de BD o lo genera rascando tablas y APIs.
+ */
 export async function inicializarAgente(): Promise<void> {
+
   if (listo) return;
   console.log(`[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`);
   const cached = leerCache();
@@ -128,7 +141,14 @@ export async function consultarAgente(
 }
 
 // Respuesta con streaming
+/**
+ * @name consultarAgenteStreaming
+ * @calledBy [src/controllers/agent.controller.ts] vía endpoint `/api/agent/stream`.
+ * @description Procesa una pregunta del usuario, ejecuta tools (si es necesario) 
+ * y devuelve la respuesta en modo streaming al frontend via SSE.
+ */
 export async function consultarAgenteStreaming(
+
   pregunta: string,
   res: Response,
   historial: ModelMessage[] = [],

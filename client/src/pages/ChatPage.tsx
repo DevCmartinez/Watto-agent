@@ -104,7 +104,8 @@ export function ChatPage() {
             )}
 
             {/* Input de texto */}
-            <div className="border-t border-(--border) bg-(--bg-card) p-4">
+            <div className="border-t border-(--border) glass p-4 sticky bottom-0">
+
                 <div className="max-w-3xl mx-auto">
                     <div className="flex gap-3 items-end">
                         <textarea
