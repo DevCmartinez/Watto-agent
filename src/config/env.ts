@@ -7,7 +7,7 @@ function getEnv(key: string, defaultValue?: string): string {
   if (!value) {
     throw new Error(
       `Variable de entorno requerida no encontrada: ${key}\n` +
-        `Asegurate de que existe en el archivo .env`,
+      `Asegurate de que existe en el archivo .env`,
     );
   }
   return value;
@@ -34,7 +34,7 @@ export const env = {
   // ■■ Google Gemini ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
   ai: {
     apiKey: getEnv("GOOGLE_GENERATIVE_AI_API_KEY"),
-    modelo: process.env.AI_MODEL || "gemini-2.5-flash",
+    modelo: process.env.AI_MODEL || "gemini-3.5-flash",
     maxTokens: parseInt(process.env.AI_MAX_TOKENS || "1000", 10),
     temperature: parseFloat(process.env.AI_TEMPERATURE || "0.3"),
   },
@@ -55,7 +55,7 @@ export const env = {
       baseUrl: process.env.AGENT_API_BASE_URL || "",
       authToken: process.env.AGENT_API_AUTH_TOKEN || "",
       authType: (process.env.AGENT_API_AUTH_TYPE || "none") as
-        "bearer"| "basic"| "apikey"| "none",
+        "bearer" | "basic" | "apikey" | "none",
     },
   },
 } as const;

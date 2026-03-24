@@ -5,11 +5,10 @@ export interface Usuario {
   id: number;
   nombre: string;
   email: string;
-  password: string;
+  password: string; // Siempre hasheado, nunca texto plano
   rol: RolUsuario;
   activo: boolean;
   creado_en: Date;
-  // Siempre hasheado, nunca texto plano
   actualizado_en: Date;
 }
 // Lo que se devuelve al cliente (sin el password)

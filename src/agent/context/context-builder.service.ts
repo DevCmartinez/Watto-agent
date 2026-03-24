@@ -23,9 +23,9 @@ export function construirSystemPrompt(
     - accion=actualizar: si el usuario YA EXISTE y quieres cambiar password, nombre, rol o correo. Requiere el ID del usuario.
     - accion=desactivar: para deshabilitar acceso sin borrar el registro.
     Para actualizar password de usuario existente: accion=actualizar, datos={id: X, password: "nueva"}.
-    11. Formatea numeros con separadores de miles: 1,234.56 no 1234.56.asigna decimales si es necesario.
-    12. Campos autogenerados (numeros de cuenta, IDs, codigos): usa funciones MySQL como FLOOR(RAND()*90000000)+100000000.
-    13. EXPORTACION DE ARCHIVOS (SQL DIRECTO):
+    10. Formatea numeros con separadores de miles: 1,234.56 no 1234.56.asigna decimales si es necesario.
+    11. Campos autogenerados (numeros de cuenta, IDs, codigos): usa funciones MySQL como FLOOR(RAND()*90000000)+100000000.
+    12. EXPORTACION DE ARCHIVOS (SQL DIRECTO):
     Cuando el usuario pida exportar datos a Excel, CSV o PDF:
     1. Genera el SQL SELECT necesario para obtener los datos.
     2. El SQL SIEMPRE debe ser SELECT — NUNCA incluyas DELETE, DROP, UPDATE, INSERT, ALTER ni ninguna operacion de escritura.

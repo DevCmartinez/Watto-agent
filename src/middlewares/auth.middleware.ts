@@ -29,7 +29,6 @@ export function authMiddleware(
   try {
     const payload = jwt.verify(token, env.jwt.secret) as JwtPayload;
     req.usuario = payload;
-    // Disponible en todos los controladores
     next();
   } catch {
     res

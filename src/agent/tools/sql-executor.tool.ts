@@ -83,9 +83,6 @@ export const sqlExecutorTool = tool({
       sqlFinal += ` LIMIT ${env.agent.db.maxRows}`;
     }
 
-    // console.log("[SQL DEBUG] SQL a ejecutar:", sqlFinal); // <- agregar aqui
-    // console.log("[SQL DEBUG] confirmado:", confirmado); // <- y este
-
     try {
       const [filas] = await pool.query<any>(sqlFinal);
       const datos = Array.isArray(filas) ? filas : [filas];
@@ -96,7 +93,6 @@ export const sqlExecutorTool = tool({
         sql_ejecutado: sqlFinal,
       };
     } catch (e: any) {
-      // console.error(`[SQL] Error: ${e.message}`); // <- descomentar temporal
       return { exito: false, error: e.message, sql_intentado: sqlFinal };
     }
   },

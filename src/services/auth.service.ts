@@ -2,11 +2,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { hashear, verificarHash } from "../utils/hash.util";
 import * as usuarioRepo from "../repositories/usuario.repository";
-import {
-  JwtPayload,
-  UsuarioPublico,
-  CrearUsuarioDto,
-} from "../models/usuario.model";
+import { JwtPayload, UsuarioPublico, CrearUsuarioDto, } from "../models/usuario.model";
 
 // Error personalizado para manejar errores de negocio
 export class AppError extends Error {
@@ -34,12 +30,12 @@ export async function login(
   // 1. Buscar el usuario por email
   const usuario = await usuarioRepo.findByEmail(email);
   if (!usuario) {
-    throw new AppError("Email invalido",401);
-  } 
+    throw new AppError("Email invalido", 401);
+  }
   // 2. Verificar el password contra el hash
   const passwordValido = await verificarHash(password, usuario.password);
   if (!passwordValido) {
-    throw new AppError("Contraseña invalida",401);
+    throw new AppError("Contraseña invalida", 401);
   }
   // 3. Generar el token JWT
   const token = generarToken({
@@ -59,7 +55,7 @@ export async function registrar(
   // Verificar que el email no exista
   const existe = await usuarioRepo.emailExiste(datos.email);
   if (existe) {
-    throw new AppError("El email ya esta registrado",409);
+    throw new AppError("El email ya esta registrado", 409);
   }
   // Hashear el password antes de guardar
   const passwordHash = await hashear(datos.password);

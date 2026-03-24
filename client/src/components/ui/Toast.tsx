@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { CheckCircle, X, FileDown } from 'lucide-react';
+import { X, FileDown } from 'lucide-react';
 import { useToastStore } from '@/stores/toastStore';
 import { clsx } from 'clsx';
 
