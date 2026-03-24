@@ -11,13 +11,14 @@ export function MessageBubble({ mensaje }: Props) {
             {/* Avatar */}
             <div className={clsx(
                 'w-8 h-8 rounded-full flex items-center justify-center',
-                'text-xs font-bold shrink-0',
+                'text-xs font-black shrink-0 shadow-sm transition-transform hover:scale-110',
                 esUsuario
                     ? 'bg-(--bubble-user) text-(--bubble-user-text)'
-                    : 'bg-(--bg-surface) text-(--text)'
+                    : 'bg-primary text-white border border-white/10'
             )}>
                 {esUsuario ? 'Tu' : 'W'}
             </div>
+
             {/* Burbuja */}
             <div className={clsx(
                 'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',

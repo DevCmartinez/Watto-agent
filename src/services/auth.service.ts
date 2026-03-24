@@ -1,10 +1,19 @@
+/**
+ * @origin [src/services/auth.service.ts]
+ * @calledBy [src/controllers/auth.controller.ts]
+ * @description Servicio de lógica de negocio para la gestión de identidades.
+ * Centraliza la validación de credenciales, hashing de contraseñas y emisión de JWT.
+ */
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { hashear, verificarHash } from "../utils/hash.util";
 import * as usuarioRepo from "../repositories/usuario.repository";
-import { JwtPayload, UsuarioPublico, CrearUsuarioDto, } from "../models/usuario.model";
+import { JwtPayload, UsuarioPublico, CrearUsuarioDto } from "../models/usuario.model";
 
-// Error personalizado para manejar errores de negocio
+/**
+ * Clase de error personalizada para el dominio de aplicación.
+ * Permite propagar códigos de estado HTTP junto con el mensaje de error.
+ */
 export class AppError extends Error {
   constructor(
     public message: string,
@@ -15,63 +24,89 @@ export class AppError extends Error {
   }
 }
 
-// Generar un token JWT con los datos del usuario
+/**
+ * Genera un token JWT firmado para la sesión del usuario.
+ * @param payload Datos mínimos del usuario para incluir en el token.
+ * @returns String conteniendo el JWT.
+ */
 function generarToken(payload: JwtPayload): string {
   return jwt.sign(payload, env.jwt.secret, {
     expiresIn: env.jwt.expiresIn as any,
   });
 }
 
-// ■■ Login ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+/**
+ * Procesa el inicio de sesión validando email y contraseña.
+ * @calledBy login en [auth.controller.ts]
+ * @param email Correo electrónico del usuario.
+ * @param password Contraseña en texto plano.
+ * @returns Objeto con los datos públicos del usuario y su token de acceso.
+ * @throws AppError (401) si las credenciales son incorrectas.
+ */
 export async function login(
   email: string,
   password: string,
 ): Promise<{ usuario: UsuarioPublico; token: string }> {
-  // 1. Buscar el usuario por email
+  // 1. Localizar registro en la base de datos (vía repositorio)
   const usuario = await usuarioRepo.findByEmail(email);
   if (!usuario) {
-    throw new AppError("Email invalido", 401);
+    throw new AppError("Las credenciales proporcionadas no son válidas.", 401);
   }
-  // 2. Verificar el password contra el hash
+
+  // 2. Comparación segura del hash de la contraseña (bcrypt/argon2)
   const passwordValido = await verificarHash(password, usuario.password);
   if (!passwordValido) {
-    throw new AppError("Contraseña invalida", 401);
+    throw new AppError("Las credenciales proporcionadas no son válidas.", 401);
   }
-  // 3. Generar el token JWT
+
+  // 3. Emisión de credencial de acceso (JWT)
   const token = generarToken({
     id: usuario.id,
     email: usuario.email,
     rol: usuario.rol,
   });
-  // 4. Retornar usuario sin password + token
+
+  // 4. Sanitización de datos (Eliminamos el password antes de devolver al cliente)
   const { password: _, ...usuarioPublico } = usuario;
   return { usuario: usuarioPublico, token };
 }
 
-// ■■ Registro ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+/**
+ * Registra un nuevo perfil de usuario en el sistema.
+ * @calledBy registro en [auth.controller.ts]
+ * @param datos Objeto con { nombre, email, password }.
+ * @returns Objeto con los datos del nuevo usuario y su token inicial.
+ * @throws AppError (409) si el correo ya está en uso.
+ */
 export async function registrar(
   datos: CrearUsuarioDto,
 ): Promise<{ usuario: UsuarioPublico; token: string }> {
-  // Verificar que el email no exista
+  // Verificación de unicidad de identidad
   const existe = await usuarioRepo.emailExiste(datos.email);
   if (existe) {
-    throw new AppError("El email ya esta registrado", 409);
+    throw new AppError("Esta dirección de correo ya se encuentra registrada.", 409);
   }
-  // Hashear el password antes de guardar
+
+  // Protección de credencial: Hashing asíncrono
   const passwordHash = await hashear(datos.password);
-  // Crear el usuario
+
+  // Persistencia en base de datos
   const id = await usuarioRepo.createUsuario({
     ...datos,
     password: passwordHash,
   });
-  // Obtener el usuario recien creado
+
+  // Recuperación del registro completo para confirmación
   const usuario = await usuarioRepo.findById(id);
-  if (!usuario) throw new Error("Error al crear el usuario");
+  if (!usuario) throw new Error("Fallo crítico en la creación del registro de usuario.");
+
   const token = generarToken({
     id: usuario.id,
     email: usuario.email,
     rol: usuario.rol,
   });
+
   const { password: _, ...usuarioPublico } = usuario;
   return { usuario: usuarioPublico, token };
 }
+

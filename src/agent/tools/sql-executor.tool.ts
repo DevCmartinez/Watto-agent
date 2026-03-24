@@ -1,23 +1,32 @@
+/**
+ * @origin [src/agent/tools/sql-executor.tool.ts]
+ * @calledBy El Agente IA en [autonomus-agent.service.ts] mediante el SDK de Vercel AI.
+ * @description Herramienta crítica que permite al agente interactuar con la base de datos MySQL.
+ * Incluye un sistema de seguridad de tres capas: 
+ * 1. Bloqueo de comandos destructivos.
+ * 2. Confirmación obligatoria para escrituras.
+ * 3. Delegación de tablas sensibles (usuarios).
+ */
 import { tool } from "ai";
 import { z } from "zod";
 import pool from "../../config/database";
 import { env } from "../../config/env";
 
-interface SQLExecutorResult {
-  exito: boolean;
-  total_filas?: number;
-  datos?: any[];
-  sql_ejecutado?: string;
-  error?: string;
-  sql_intentado?: string;
-}
-
-// Operaciones que NUNCA se permiten sin importar nada
+/**
+ * Operaciones de estructura DDL que están estrictamente prohibidas por seguridad.
+ * Ningún usuario o agente puede ejecutar estas sentencias.
+ */
 const SIEMPRE_BLOQUEADAS = ["drop", "truncate", "alter", "create"];
 
-// Operaciones que requieren confirmacion del usuario
+/**
+ * Operaciones DML que modifican datos y requieren el consentimiento explícito del usuario ('si/no').
+ */
 const REQUIEREN_CONFIRMACION = ["insert", "update", "delete"];
 
+/**
+ * Definición de la Tool para el modelo de lenguaje.
+ * Contiene la descripción semántica que la IA usa para decidir cuándo llamarla.
+ */
 export const sqlExecutorTool = tool({
   description:
     "Ejecuta cualquier consulta SQL en MySQL: SELECT, INSERT, UPDATE o DELETE. " +
@@ -26,66 +35,74 @@ export const sqlExecutorTool = tool({
     "luego si el usuario confirma con 'si', llama de nuevo con confirmado=true para ejecutar." +
     "NUNCA ejecutar DROP, TRUNCATE, ALTER ni CREATE bajo ninguna circunstancia.",
 
+  // Definición del esquema de entrada que el LLM debe generar
   inputSchema: z.object({
     sql: z
       .string()
       .describe(
-        "Consulta SQL valida para MySQL. Puede ser SELECT, INSERT, UPDATE o DELETE. Sin punto y coma al final.",
+        "Consulta SQL válida para MySQL. Debe seguir el esquema de tablas descubierto. Sin punto y coma al final.",
       ),
-    descripcion: z.string().describe("Que hace esta consulta en una frase."),
+    descripcion: z.string().describe("Breve explicación de qué pretende lograr esta consulta."),
     confirmado: z
       .boolean()
       .optional()
       .default(false)
       .describe(
-        "true si el usuario ya confirmo explicitamente con 'si'. " +
-        "Omitir o poner false en el primer intento de escritura.",
+        "Indica si el usuario humano ya dio el visto bueno. false por defecto para escrituras.",
       ),
   }),
 
+  /**
+   * Lógica de ejecución de la herramienta.
+   */
   execute: async ({ sql, descripcion, confirmado }) => {
+    // Normalización para análisis de seguridad
     const sqlLower = sql.trim().toLowerCase().replace(/\s+/g, " ");
 
-    // Bloqueo permanente — nunca se ejecutan
+    // CAPA 1: Bloqueo de Comandos Destructivos
     for (const palabra of SIEMPRE_BLOQUEADAS) {
       const regex = new RegExp(`\\b${palabra}\\b`, "i");
       if (regex.test(sqlLower)) {
         return {
           exito: false,
-          error: `Operacion '${palabra.toUpperCase()}' no permitida bajo ninguna circunstancia.`,
+          error: `Seguridad: El comando '${palabra.toUpperCase()}' está restringido para el agente.`,
         };
       }
     }
 
-    // Operaciones de escritura — requieren confirmacion
+    // Identificar si la consulta pretende alterar datos
     const esEscritura = REQUIEREN_CONFIRMACION.some((p) =>
       new RegExp(`\\b${p}\\b`, "i").test(sqlLower),
     );
 
+    // CAPA 2: Solicitud de confirmación humana para INSERT/UPDATE/DELETE
     if (esEscritura && !confirmado) {
       return {
         exito: false,
-        error: "REQUIERE_CONFIRMACION",
+        error: "REQUIERE_CONFIRMACION", // Este token es capturado por el servicio de streaming
       };
     }
 
-    // Bloquear escritura directa en tabla usuarios (Esto lo hice por que no encripta la contraseña)
+    // CAPA 3: Protección de la tabla de usuarios
+    // Se delega a 'usuario-executor.tool' para asegurar el hashing de contraseñas
     if (esEscritura && sqlLower.includes('usuarios')) {
       return {
         exito: false,
-        error: 'Para operaciones en la tabla usuarios usa la herramienta gestionarUsuario.',
+        error: 'Las modificaciones en la tabla usuarios deben realizarse mediante la herramienta gestionarUsuario.',
       };
     }
 
-    // Agregar LIMIT solo en SELECT
+    // Optimización: Agregar LIMIT automático a los SELECT si no lo tienen
     let sqlFinal = sql.trim();
     if (sqlLower.startsWith("select") && !sqlLower.includes("limit")) {
       sqlFinal += ` LIMIT ${env.agent.db.maxRows}`;
     }
 
     try {
+      // Ejecución real en el pool de conexiones de MySQL
       const [filas] = await pool.query<any>(sqlFinal);
       const datos = Array.isArray(filas) ? filas : [filas];
+      
       return {
         exito: true,
         total_filas: datos.length,
@@ -93,7 +110,12 @@ export const sqlExecutorTool = tool({
         sql_ejecutado: sqlFinal,
       };
     } catch (e: any) {
-      return { exito: false, error: e.message, sql_intentado: sqlFinal };
+      // Captura de errores de sintaxis o de base de datos
+      return { 
+        exito: false, 
+        error: `Error de base de datos: ${e.message}`, 
+        sql_intentado: sqlFinal 
+      };
     }
   },
 });

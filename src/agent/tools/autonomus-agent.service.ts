@@ -165,85 +165,60 @@ export async function consultarAgenteStreaming(
   try {
     const resultado = streamText({
       model: aiModel,
-      system: systemPrompt!,
+      system: systemPrompt! + "\n\nNOTA: Si los datos son muy extensos, sugiere opcionalmente la exportación a Excel/PDF para mejor visualización.",
       messages: [...historial, { role: "user", content: pregunta }],
       tools: getTools(),
       stopWhen: stepCountIs(10),
-      maxOutputTokens: AI_CONFIG.maxTokens,
-      temperature: AI_CONFIG.temperature,
+      maxOutputTokens: 2048,
+      temperature: 0.2,
     });
 
-    // Acumular todo el texto — procesarlo solo en finish
-    let textoCompleto = '';
+    let textoAcumulado = '';
+    let bloqueTecnicoAbierto = false;
 
     for await (const parte of resultado.fullStream) {
-
       if (parte.type === 'text-delta') {
-        // Solo acumular — NO enviar todavia
-        textoCompleto += parte.text || '';
+        const chunk = parte.text || '';
+        textoAcumulado += chunk;
+
+        // Solo ocultamos del streaming si detectamos el inicio del bloque de exportación
+        if (chunk.includes('|||')) bloqueTecnicoAbierto = true;
+        
+        if (!bloqueTecnicoAbierto) {
+          res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk })}\n\n`);
+        }
       }
 
       if (parte.type === 'tool-call') {
         res.write(`data: ${JSON.stringify({ tipo: 'tool', nombre: parte.toolName })}\n\n`);
       }
 
-      if (parte.type === 'error') {
-        const msg = (parte as any).error?.message?.toLowerCase() || '';
-        const esRateLimit =
-          msg.includes('quota') ||
-          msg.includes('429') ||
-          msg.includes('resource_exhausted');
-        res.write(`data: ${JSON.stringify({
-          tipo: 'error',
-          mensaje: esRateLimit
-            ? 'Limite de consultas alcanzado. Espera unos minutos.'
-            : 'Error procesando la consulta.',
-        })}\n\n`);
-      }
-
       if (parte.type === 'finish') {
-
-        // Nuevo patron de exportacion — contiene SQL en lugar de tabla markdown
-        // Formato: |||EXPORT_SQL:formato:titulo|||SQL|||END_EXPORT_SQL|||
+        // Detección final de exportación en todo el texto acumulado
         const exportRegex = /\|\|\|EXPORT_SQL:(pdf|xlsx|csv):([^\|]+)\|\|\|([\s\S]*?)\|\|\|END_EXPORT_SQL\|\|\|/i;
-        const match = textoCompleto.match(exportRegex);
+        const match = textoAcumulado.match(exportRegex);
+        
         if (match) {
           const formato = match[1].toLowerCase().trim();
           const titulo = match[2].trim();
           const sql = match[3].trim();
-          // Texto antes del patron (si hay algo)
-          const textoPrevio = textoCompleto.slice(0, match.index).trim();
-          if (textoPrevio) {
-            res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: textoPrevio })}\n\n`);
-          }
-
-          // Construir la URL del endpoint de exportacion
-          // El frontend la usara para descargar el archivo directamente
-          const sqlEncoded = encodeURIComponent(sql);
-          const tituloEncoded = encodeURIComponent(titulo);
-          const urlExport = `/api/export?sql=${sqlEncoded}&formato=${formato}&titulo=${tituloEncoded}`;
-
-          // Emitir evento export_url al frontend
-          // El frontend hara fetch a esta URL para descargar el archivo
-          res.write(`data: ${JSON.stringify({ tipo: 'export_url', url: urlExport, formato: formato, titulo: titulo, })}\n\n`);
-
-          // Texto despues del patron (mensaje de confirmacion del agente)
-          const textoPost = textoCompleto.slice(match.index! + match[0].length).trim();
-          if (textoPost) {
-            res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: textoPost })}\n\n`);
-          }
-        } else {
-
-          // Sin exportacion — enviar el texto completo como respuesta normal
-          if (textoCompleto.trim()) {
-            res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: textoCompleto })}\n\n`);
-          }
+          const urlExport = `/api/export?sql=${encodeURIComponent(sql)}&formato=${formato}&titulo=${encodeURIComponent(titulo)}`;
+          
+          res.write(`data: ${JSON.stringify({ tipo: 'export_url', url: urlExport, formato, titulo })}\n\n`);
+          
+          // Enviar texto sobrante que no se haya streameado
+          const textoPost = textoAcumulado.split('|||END_EXPORT_SQL|||')[1]?.trim();
+          if (textoPost) res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: '\n\n' + textoPost })}\n\n`);
+        } else if (bloqueTecnicoAbierto) {
+          // Si abrimos bloque pero no cerramos o no era export, mandamos el resto
+          res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: textoAcumulado.slice(textoAcumulado.indexOf('|||')) })}\n\n`);
         }
-
-        // Siempre enviar el evento fin con el total de tokens usados
-        res.write(`data: ${JSON.stringify({ tipo: 'fin', tokens: parte.totalUsage.totalTokens ?? 0, })}\n\n`);
+        
+        res.write(`data: ${JSON.stringify({ tipo: 'fin', tokens: parte.totalUsage.totalTokens ?? 0 })}\n\n`);
       }
     }
+
+
     console.error = originalConsoleError;
 
   } catch (e: any) {
