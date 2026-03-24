@@ -76,14 +76,14 @@ export function ChatPage() {
             {/* Orbes de Fondo Dinámicos */}
             <div className="orb w-80 h-80 bg-primary/10 top-[-10%] right-[-10%] opacity-40" />
             <div className="orb w-64 h-64 bg-accent/5 bottom-[10%] left-[-5%] opacity-30 [animation-delay:-7s]" />
-            
+
             {/* Cabecera persistente (client/src/components/layout/Header.tsx) */}
             <Header onLimpiarChat={limpiarChat} mensajes={mensajes} />
 
             {/* Area de scroll de Mensajes */}
             <div className="flex-1 overflow-y-auto px-4 py-8 custom-scrollbar relative z-10">
                 <div className="max-w-4xl mx-auto">
-                    
+
                     {/* Pantalla de bienvenida (Solo si no hay historial) */}
                     {mensajes.length === 0 && (
                         <div className="text-center mt-24 animate-fade-in">
@@ -95,7 +95,7 @@ export function ChatPage() {
                                 Operation Center
                             </h2>
                             <p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed border-l-2 border-accent/20 pl-6 italic">
-                                Sistema de inteligencia autónoma listo para el análisis de datos masivos y gestión de infraestructura.
+                                Sistema de inteligencia autónoma integral para el análisis de datos masivos y gestión.
                             </p>
                             <div className="mt-12 flex justify-center gap-3 opacity-30">
                                 <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0s' }} />
@@ -181,7 +181,7 @@ export function ChatPage() {
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 onInput={handleInput}
-                                placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "Command input..."}
+                                placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "Escribe aquí... ( Shift + Enter para saltar línea )"}
                                 rows={1}
                                 disabled={cargando || mostrarConfirmacion}
                                 className={clsx(
@@ -211,7 +211,7 @@ export function ChatPage() {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Footer del chat */}
                     <div className="flex justify-between items-center px-6 mt-4 opacity-40">
                         <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export function ChatPage() {
                             </p>
                         </div>
                         <p className="text-[9px] text-(--text-muted) font-black">
-                            V 0.8.2-ALPHA
+                            V 0.0.39-ALPHA
                         </p>
                     </div>
                 </div>

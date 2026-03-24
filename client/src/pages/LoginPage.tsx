@@ -54,7 +54,7 @@ export function LoginPage() {
             <div className="w-full max-w-lg animate-fade-in relative z-10">
                 {/* Contenedor Principal con efecto Glassmorphism */}
                 <div className="glass rounded-[40px] p-8 sm:p-12 transition-all duration-500 hover:scale-[1.01] hover:shadow-2xl hover:shadow-accent/10">
-                    
+
                     {/* Encabezado Corporativo Premium */}
                     <div className="text-center mb-10">
                         <div className="relative inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-primary shadow-2xl shadow-primary/40 mb-8 group transition-all hover:rotate-6">
@@ -72,11 +72,11 @@ export function LoginPage() {
 
                     {/* Formulario de Login */}
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                        
+
                         {/* Campo: Correo Electrónico */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-(--text-muted) uppercase ml-1 tracking-wider opacity-60">
-                                Identifier
+                                Usuario
                             </label>
                             <div className="relative group">
                                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-accent" />
@@ -96,7 +96,7 @@ export function LoginPage() {
                         {/* Campo: Contraseña */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-(--text-muted) uppercase ml-1 tracking-wider opacity-60">
-                                Security Token
+                                Password
                             </label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-accent" />
@@ -129,7 +129,7 @@ export function LoginPage() {
                                 className="w-full py-6 rounded-2xl shadow-xl shadow-primary/20 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all bg-primary"
                                 tamano="lg"
                             >
-                                Secure Login
+                                Ingresar
                             </Button>
                         </div>
                     </form>
@@ -137,7 +137,7 @@ export function LoginPage() {
                     {/* Pie de página del Login */}
                     <div className="mt-12 pt-8 border-t border-(--border)/30 text-center">
                         <p className="text-[9px] text-(--text-muted) font-bold uppercase tracking-[0.2em] opacity-40">
-                            Watto AI Autonomous Core v0.8.2
+                            Watto AI Autonomous Core v0.0.39-ALPHA
                         </p>
                     </div>
                 </div>
