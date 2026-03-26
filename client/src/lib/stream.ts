@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/stores/authStore';
 
 // Tipos de eventos que envia el backend
-export type StreamEventType = 'texto' | 'tool' | 'fin' | 'error' | 'export_url';
+export type StreamEventType = 'texto' | 'tool' | 'fin' | 'error' | 'export_url' | 'import_ready';
 
 export interface StreamEvent {
     tipo: StreamEventType;
@@ -14,6 +14,12 @@ export interface StreamEvent {
     url?: string;// URL del endpoint de descarga
     formato?: string;// xlsx | csv | pdf
     titulo?: string;// Nombre del archivo
+
+    // Nuevos campos para importacion:
+    destino?: 'bd' | 'api';
+    tabla?: string;
+    endpoint?: string;
+    mapeo?: Record<string, string>;
 }
 
 // Mensaje del historial de conversacion
@@ -29,6 +35,7 @@ export interface StreamCallbacks {
     onFin: (tokens: number) => void; // Respuesta completa
     onError: (mensaje: string) => void; // Error
     onExportUrl: (url: string, formato: string, titulo: string) => void;
+    onImportReady: (mapeo: Record<string, string>, destino: 'bd' | 'api', tabla?: string, endpoint?: string) => void;
 }
 
 // Funcion principal para hacer streaming al agente
@@ -98,6 +105,16 @@ export async function streamAgente(
                     case 'export_url':
                         if (evento.url && evento.formato && evento.titulo) {
                             callbacks.onExportUrl(evento.url, evento.formato, evento.titulo);
+                        }
+                        break;
+                    case 'import_ready':
+                        if (evento.mapeo && evento.destino) {
+                            callbacks.onImportReady(
+                                evento.mapeo,
+                                evento.destino,
+                                evento.tabla,
+                                evento.endpoint
+                            );
                         }
                         break;
                 }

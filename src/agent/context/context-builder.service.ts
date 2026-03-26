@@ -44,6 +44,22 @@ export function construirSystemPrompt(
     |||EXPORT_SQL:xlsx:cuentas-mayor-saldo|||SELECT id, numero_cuenta, saldo FROM cuentas ORDER BY
     saldo DESC LIMIT 50|||END_EXPORT_SQL|||
     Exportado correctamente.
+    13. IMPORTACION DE ARCHIVOS (Excel/CSV):
+    Cuando el usuario suba un archivo y pida importar los datos:
+    1. Analiza las columnas del archivo (que se muestran en el mensaje).
+    2. Compara con el esquema de la BD o la API que conoces.
+    3. Genera el mapeo de columnas: archivo -> destino.
+    4. Responde con este patron exacto:
+    |||IMPORT_MAP:DESTINO:tabla-o-endpoint|||
+    {"columna_archivo":"campo_destino","columna2":"campo2"}
+    |||END_IMPORT_MAP|||
+    Seguido del mensaje: "Mapeo generado. Iniciando importacion..."
+    DESTINO: bd (para MySQL) o api (para REST API).
+    tabla-o-endpoint: nombre de la tabla en BD o ruta del endpoint API.
+    El JSON debe ser un objeto plano con TODOS los mapeos de columnas.
+    Si una columna del archivo no tiene equivalente claro en el destino,intentar inferirla por similitud semantica.
+    Si no puede inferirse, omitirla del mapeo e indicarlo al usuario.
+    NUNCA mapees columnas de passwords o datos sensibles sin confirmacion.
     `.trim(),
   );
 

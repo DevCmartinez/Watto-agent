@@ -27,3 +27,25 @@ export interface PdfOptions {
     subtitulo: string; // Subtitulo — ej: nombre del usuario o fecha
     nombreArchivo: string; // Nombre del archivo descargado
 }
+
+// Archivo leido por el frontend antes de enviarlo al agente
+export interface ArchivoImport {
+    nombre: string; // Nombre original del archivo (ej: clientes.xlsx)
+    extension: 'xlsx' | 'csv';
+    totalFilas: number;// Total de filas en el archivo (sin encabezados)
+    encabezados: string[];// Primera fila: nombres de columnas del archivo
+    muestra: string[][];// Primeras 5 filas de datos para el agente
+    datosCompletos: any[]; // Todos los objetos fila para la importacion final
+
+
+}
+// Mapeo que genera el agente: columna del archivo -> campo del destino
+export interface MapeoColumnas {
+    [columnaArchivo: string]: string; // Ej: { "Nombre Completo": "nombre" }
+}
+// Resultado de la importacion en el backend
+export interface ResultadoImport {
+    insertados: number;
+    errores: number;
+    detalles: string[]; // Mensajes de error por fila si los hay
+}

@@ -183,7 +183,7 @@ export async function consultarAgenteStreaming(
 
         // Solo ocultamos del streaming si detectamos el inicio del bloque de exportación
         if (chunk.includes('|||')) bloqueTecnicoAbierto = true;
-        
+
         if (!bloqueTecnicoAbierto) {
           res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk })}\n\n`);
         }
@@ -197,38 +197,71 @@ export async function consultarAgenteStreaming(
         // Detección final de exportación en todo el texto acumulado
         const exportRegex = /\|\|\|EXPORT_SQL:(pdf|xlsx|csv):([^\|]+)\|\|\|([\s\S]*?)\|\|\|END_EXPORT_SQL\|\|\|/i;
         const match = textoAcumulado.match(exportRegex);
-        
+
+        // ■■ Deteccion de IMPORTACION (nuevo) ■■■■■■■■■■■■■■■■■■■■■
+        const importRegex = /\|\|\|IMPORT_MAP:(bd|api):([^\|]+)\|\|\|?([\s\S]*?)?\|\|\|END_IMPORT_MAP\|\|\|/i;
+        const matchImport = textoAcumulado.match(importRegex);
+
+
         if (match) {
           const formato = match[1].toLowerCase().trim();
           const titulo = match[2].trim();
           const sql = match[3].trim();
           const urlExport = `/api/export?sql=${encodeURIComponent(sql)}&formato=${formato}&titulo=${encodeURIComponent(titulo)}`;
-          
+
           res.write(`data: ${JSON.stringify({ tipo: 'export_url', url: urlExport, formato, titulo })}\n\n`);
-          
+
           // Enviar texto sobrante que no se haya streameado
           const textoPost = textoAcumulado.split('|||END_EXPORT_SQL|||')[1]?.trim();
           if (textoPost) res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: '\n\n' + textoPost })}\n\n`);
-        } else if (bloqueTecnicoAbierto) {
+        } else if (matchImport) {
+
+          // Hay un mapeo de importacion generado por el agente
+          const destino = matchImport[1].toLowerCase() as 'bd' | 'api';
+          const tablaOEndpoint = matchImport[2].trim();
+          const mapeoJson = matchImport[3].trim();
+
+          // Texto antes del patron
+          const textoPrevio = textoAcumulado.slice(0, matchImport.index).trim();
+          if (textoPrevio && bloqueTecnicoAbierto) {
+            // Si estaba oculto pero hay texto antes del match, lo enviamos (aunque es raro en este flujo)
+          }
+
+          try {
+            // Parsear el JSON del mapeo generado por el agente
+            const mapeo = JSON.parse(mapeoJson);
+            // Emitir evento import_ready al frontend
+            res.write(`data: ${JSON.stringify({
+              tipo: 'import_ready',
+              destino,
+              tabla: destino === 'bd' ? tablaOEndpoint : undefined,
+              endpoint: destino === 'api' ? tablaOEndpoint : undefined,
+              mapeo,
+            })}\n\n`);
+          } catch (e) {
+            res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: '\n\nError al procesar el mapeo de importación.\n' })}\n\n`);
+          }
+
+          // Texto después del patrón
+          const textoPost = textoAcumulado.slice((matchImport.index || 0) + matchImport[0].length).trim();
+          if (textoPost) res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: '\n\n' + textoPost })}\n\n`);
+        }
+        else if (bloqueTecnicoAbierto) {
           // Si abrimos bloque pero no cerramos o no era export, mandamos el resto
           res.write(`data: ${JSON.stringify({ tipo: 'texto', chunk: textoAcumulado.slice(textoAcumulado.indexOf('|||')) })}\n\n`);
         }
-        
+
         res.write(`data: ${JSON.stringify({ tipo: 'fin', tokens: parte.totalUsage.totalTokens ?? 0 })}\n\n`);
       }
     }
-
 
     console.error = originalConsoleError;
 
   } catch (e: any) {
     console.error = originalConsoleError;
     const msg = e?.message?.toLowerCase() || '';
-    const esRateLimit =
-      msg.includes('quota') ||
-      msg.includes('429') ||
-      msg.includes('resource_exhausted') ||
-      msg.includes('maxretriesexceeded');
+    const esRateLimit = msg.includes('quota') || msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('maxretriesexceeded');
+
     res.write(`data: ${JSON.stringify({
       tipo: 'error',
       mensaje: esRateLimit

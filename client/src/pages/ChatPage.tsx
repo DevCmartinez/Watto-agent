@@ -7,18 +7,67 @@
  */
 
 import { useRef, useEffect, useState, type KeyboardEvent } from 'react';
-import { Send, StopCircle, Bot, Sparkles, ShieldCheck } from 'lucide-react';
+import { Send, StopCircle, Bot, Sparkles, ShieldCheck, Upload } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { Header } from '@/components/layout/Header';
+import { leerArchivo } from '@/lib/fileReader';
 import { clsx } from 'clsx';
 
 export function ChatPage() {
     // Extracción de lógica del hook useChat (client/src/hooks/useChat.ts)
-    const { mensajes, cargando, toolActivo, enviarMensaje, cancelar, limpiarChat } = useChat();
+    const { mensajes, cargando, toolActivo, enviarMensaje, cancelar, limpiarChat, enviarMensajeConArchivo } = useChat();
     const [input, setInput] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // Ref para el input file oculto
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+
+    // Manejar la seleccion de un archivo por el usuario
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validar que sea Excel o CSV
+        const esValido = file.name.endsWith('.xlsx') ||
+            file.name.endsWith('.xls') ||
+            file.name.endsWith('.csv');
+        if (!esValido) {
+            alert('Solo se permiten archivos Excel (.xlsx, .xls) o CSV (.csv)');
+            return;
+        }
+
+        // Validar tamano maximo: 10MB
+        if (file.size > 10 * 1024 * 1024) {
+            alert('El archivo no puede superar 10MB');
+            return;
+
+        } try {
+            // Leer el archivo con SheetJS
+            const archivo = await leerArchivo(file);
+            enviarMensajeConArchivo;
+
+            // Mostrar mensaje en el chat indicando que el archivo fue cargado
+            // El usuario debera escribir que quiere hacer con el archivo
+            const mensajeCarga = [
+                `■ Archivo cargado: **${archivo.nombre}**`,
+                `${archivo.totalFilas} filas · ${archivo.encabezados.length} columnas`,
+                `Columnas detectadas: ${archivo.encabezados.join(', ')}`,
+                ``,
+                `Escribe que deseas hacer con este archivo.`,
+                `Ejemplo: "importa estos datos como nuevos clientes"`,
+            ].join('');
+
+            // Enviar el mensaje de carga al chat (sin pasar por el agente todavia)
+            enviarMensajeConArchivo(mensajeCarga, archivo);
+        } catch (err: any) {
+            alert('Error al leer el archivo: ' + err.message);
+        }
+        // Limpiar el input para permitir subir el mismo archivo de nuevo
+        e.target.value = '';
+    };
+
 
     /**
      * Efecto para mantener el scroll siempre en el último mensaje.
@@ -174,7 +223,7 @@ export function ChatPage() {
                 <div className="max-w-4xl mx-auto">
                     <div className="glass rounded-[32px] p-2 border border-white/20 shadow-2xl transition-all">
 
-                        <div className="flex gap-4 items-end bg-white/5 rounded-[24px]">
+                        <div className="flex gap-4 items-center bg-white/5 rounded-[24px]">
                             <textarea
                                 ref={textareaRef}
                                 value={input}
@@ -191,11 +240,29 @@ export function ChatPage() {
                                     'disabled:opacity-40 transition-opacity'
                                 )}
                             />
-                            <div className="pb-2 pr-2">
+                            <div className="flex items-center gap-2 pr-2">
+                                {/* // Input file oculto — se activa desde el boton de upload */}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".xlsx,.xls,.csv"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                                {/* Boton de importacion — Ajustado para ser simétrico con el de enviar */}
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={cargando}
+                                    className="aspect-square p-4 rounded-2xl border border-white/10 bg-white/5 text-(--text-muted) hover:text-(--text) hover:bg-white/10 disabled:opacity-40 transition-all flex items-center justify-center shadow-lg"
+                                    title="Importar Excel o CSV"
+                                >
+                                    <Upload size={20} />
+                                </button>
+
                                 {cargando ? (
                                     <button
                                         onClick={cancelar}
-                                        className="p-4 rounded-2xl bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all shadow-lg backdrop-blur-xl"
+                                        className="aspect-square p-4 rounded-2xl bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-all shadow-lg backdrop-blur-xl flex items-center justify-center"
                                     >
                                         <StopCircle size={20} className="animate-spin-slow" />
                                     </button>
@@ -203,7 +270,7 @@ export function ChatPage() {
                                     <button
                                         onClick={handleSend}
                                         disabled={!input.trim() || mostrarConfirmacion}
-                                        className="p-4 rounded-2xl bg-primary text-white disabled:opacity-20 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 active:scale-90 transition-all group"
+                                        className="aspect-square p-4 rounded-2xl bg-primary text-white disabled:opacity-20 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 active:scale-90 transition-all group flex items-center justify-center shadow-lg"
                                     >
                                         <Send size={20} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                                     </button>
