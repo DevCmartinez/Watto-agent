@@ -62,14 +62,15 @@ function leerCache(): string | null {
   }
 }
 
-function guardarCache(prompt: string): void {
+// OPT-01: versión async para no bloquear el event loop
+async function guardarCache(prompt: string): Promise<void> {
   try {
     const cache: SchemaCache = {
       systemPrompt: prompt,
       generadoEn: new Date().toISOString(),
       modo: env.agent.mode,
     };
-    fs.writeFileSync(CACHE_PATH, JSON.stringify(cache), 'utf-8');
+    await fs.promises.writeFile(CACHE_PATH, JSON.stringify(cache), 'utf-8');
   } catch {
     // Si falla el cache no es critico
   }
@@ -95,7 +96,7 @@ export async function inicializarAgente(): Promise<void> {
   const esquemaBD = modo === "db" || modo === "both" ? await descubrirEsquemaBD() : undefined;
   const esquemaAPI = modo === "api" || modo === "both" ? await descubrirEsquemaAPI() : undefined;
   systemPrompt = construirSystemPrompt(esquemaBD, esquemaAPI);
-  guardarCache(systemPrompt);
+  await guardarCache(systemPrompt);
   listo = true;
   console.log(`[${env.agent.name}] OK System prompt: ${systemPrompt.length} caracteres\n`);
 }
@@ -207,9 +208,10 @@ export async function consultarAgenteStreaming(
           const formato = match[1].toLowerCase().trim();
           const titulo = match[2].trim();
           const sql = match[3].trim();
-          const urlExport = `/api/export?sql=${encodeURIComponent(sql)}&formato=${formato}&titulo=${encodeURIComponent(titulo)}`;
 
-          res.write(`data: ${JSON.stringify({ tipo: 'export_url', url: urlExport, formato, titulo })}\n\n`);
+          // SEC-04: Enviamos sql/formato/titulo directamente (sin URL con query string)
+          // El cliente hará POST a /api/export con estos datos en el body
+          res.write(`data: ${JSON.stringify({ tipo: 'export_url', sql, formato, titulo })}\n\n`);
 
           // Enviar texto sobrante que no se haya streameado
           const textoPost = textoAcumulado.split('|||END_EXPORT_SQL|||')[1]?.trim();

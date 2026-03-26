@@ -28,16 +28,17 @@ function validarSQL(sql: string): { valido: boolean; error?: string } {
     return { valido: true };
 }
 
-// GET /api/agent/export?sql=SELECT...&formato=xlsx&titulo=nombre
+// POST /api/export  { sql, formato, titulo }
 // Ejecuta el SQL, genera el archivo y lo descarga
+// SEC-04: El SQL viaja en el body (POST) para evitar que quede en logs/URLs
 export async function exportarArchivo(
     req: Request,
     res: Response
 ): Promise<void> {
-    // Leer parametros de la query string
-    const sql = req.query.sql as string;
-    const formato = req.query.formato as string;
-    const titulo = req.query.titulo as string || 'exportacion';
+    // Leer parametros del body (POST)
+    const sql = req.body.sql as string;
+    const formato = req.body.formato as string;
+    const titulo = (req.body.titulo as string) || 'exportacion';
     // Validar que los parametros existan
     if (!sql || !formato) {
         res.status(400).json({ exitoso: false, mensaje: 'sql y formato son requeridos' });

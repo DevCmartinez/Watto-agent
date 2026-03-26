@@ -1,35 +1,42 @@
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 
-
-// Descarga un archivo desde la URL del endpoint de exportacion
-// El backend ya genero el archivo — el frontend solo lo descarga
+/**
+ * SEC-04: El SQL ya no viaja en la URL como query string (GET).
+ * Ahora se hace un POST a /api/export con el SQL en el body (encriptado en tránsito).
+ * @param sql    La consulta SQL generada por el agente
+ * @param formato xlsx | csv | pdf
+ * @param titulo  Nombre del archivo a descargar
+ */
 export async function descargarExportacion(
-    url: string,
+    sql: string,
     formato: string,
     titulo: string
 ): Promise<void> {
     const { mostrarToast } = useToastStore.getState();
     const token = useAuthStore.getState().token;
 
-    // Nombre limpio del archivo
     const nombreArchivo = `${titulo}.${formato}`;
     try {
-
-        // Hacer fetch al endpoint con el JWT en el header
-        // El backend ejecuta el SQL y devuelve el archivo binario
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${token}`, },
+        // SEC-04: POST con el SQL en el body — ya no queda expuesto en la URL
+        const response = await fetch('/api/export', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sql, formato, titulo }),
         });
-        // Verificar que la respuesta fue exitosa
+
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
             mostrarToast(error.mensaje || 'Error al generar el archivo', 'error');
             return;
         }
+
         // Convertir la respuesta a blob (archivo binario)
         const blob = await response.blob();
+
         // Crear un link temporal y hacer click para descargar
         const urlBlob = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -38,9 +45,10 @@ export async function descargarExportacion(
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
         // Limpiar la URL temporal de memoria
         URL.revokeObjectURL(urlBlob);
-        // Mostrar notificacion de exito
+
         mostrarToast(`Descargado: ${nombreArchivo}`);
     } catch (e: any) {
         mostrarToast('Error al descargar el archivo: ' + e.message, 'error');

@@ -3,7 +3,8 @@ import { exportarArchivo } from '../controllers/export.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 
 const router = Router();
-// GET /api/export?sql=SELECT...&formato=xlsx&titulo=nombre
+// POST /api/export  { sql, formato, titulo }
+// SEC-04: POST para que el SQL no quede expuesto en URLs ni logs
 // Protegido con JWT — solo usuarios autenticados pueden exportar
-router.get('/', authMiddleware, exportarArchivo);
+router.post('/', authMiddleware, exportarArchivo);
 export default router;

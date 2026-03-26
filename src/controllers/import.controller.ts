@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 import { env } from '../config/env';
+import { RowDataPacket } from 'mysql2';
 
 // Estructura del body que recibe el endpoint
 interface ImportBody {
@@ -16,6 +17,17 @@ interface ResultadoImport {
     insertados: number;
     errores: number;
     detalles: string[];
+}
+
+/**
+ * SEC-02: Obtiene la lista de tablas reales existentes en la BD para whitelist.
+ * Previene SQL injection via nombre de tabla.
+ */
+async function tablasDisponibles(): Promise<string[]> {
+    const [rows] = await pool.query<RowDataPacket[]>(
+        'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()'
+    );
+    return rows.map((r: any) => (r.TABLE_NAME || r.table_name) as string);
 }
 
 // POST /api/import
@@ -53,11 +65,36 @@ export async function importarDatos(
 
     try {
         let resultado: ResultadoImport;
+
         if (destino === 'bd') {
+            // SEC-02: Validar que la tabla existe en la BD antes de insertar
+            const tablas = await tablasDisponibles();
+            if (!tablas.includes(tabla!)) {
+                res.status(400).json({
+                    exitoso: false,
+                    mensaje: `Tabla '${tabla}' no existe o no está disponible para importación.`
+                });
+                return;
+            }
             resultado = await importarEnBD(tabla!, mapeo, datos);
         } else {
-            resultado = await importarEnAPI(endpoint!, mapeo, datos);
+            // SEC-05: Validar endpoint contra path traversal y protocol injection
+            const endpointNorm = (endpoint || '').replace(/^\/+/, '');
+            if (
+                endpointNorm.includes('..') ||
+                /^https?:\/\//i.test(endpointNorm) ||
+                endpointNorm.includes('\0') ||
+                /[<>"'{}|\\^[\]`]/.test(endpointNorm)
+            ) {
+                res.status(400).json({
+                    exitoso: false,
+                    mensaje: 'El endpoint contiene caracteres o secuencias no permitidas.'
+                });
+                return;
+            }
+            resultado = await importarEnAPI(endpointNorm, mapeo, datos);
         }
+
         res.json({
             exitoso: true,
             mensaje: `Importacion completada: ${resultado.insertados} registros insertados`,
@@ -108,9 +145,8 @@ async function importarEnBD(
                     valoresBD[campoBD] = fila[colArchivo] ?? '';
                 }
 
-                // Construir el INSERT dinamicamente
-                const columnas
-                    = Object.keys(valoresBD).join(', ');
+                // Construir el INSERT dinamicamente (tabla ya validada por whitelist)
+                const columnas = Object.keys(valoresBD).join(', ');
                 const placeholders = Object.keys(valoresBD).map(() => '?').join(', ');
                 const valores = Object.values(valoresBD);
                 const sql = `INSERT INTO ${tabla} (${columnas}) VALUES (${placeholders})`;
@@ -126,8 +162,8 @@ async function importarEnBD(
     return resultado;
 }
 
-// Importar filas llamando al endpoint de la API externa
-// Aplica el mapeo y hace POST por cada fila (o en batch si la API lo soporta)
+// PERF-03: Importar filas llamando al endpoint de la API externa
+// Usa concurrencia de hasta 5 requests paralelos para mejorar performance
 async function importarEnAPI(
     endpoint: string,
     mapeo: Record<string, string>,
@@ -147,13 +183,12 @@ async function importarEnAPI(
         throw new Error('AGENT_API_BASE_URL no esta configurado en .env');
     }
 
-    const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+    const url = `${baseUrl.replace(/\/$/, '')}/${endpoint}`;
 
     // Headers de autenticacion de la API
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'Accept':
-            'application/json',
+        'Accept': 'application/json',
     };
 
     if (env.agent.api.authToken) {
@@ -165,31 +200,44 @@ async function importarEnAPI(
         const headerNombre = env.agent.api.authType === 'apikey' ? 'X-API-Key' : 'Authorization';
         headers[headerNombre] = tipos[env.agent.api.authType] || env.agent.api.authToken;
     }
-    // Procesar cada fila aplicando el mapeo
-    for (let i = 0; i < datos.length; i++) {
-        const fila = datos[i];
-        try {
-            // Construir el JSON de la fila usando el mapeo
-            // { campo_api: valor_del_archivo }
+
+    // PERF-03: Procesamiento en lotes concurrentes (5 requests en paralelo)
+    const CONCURRENCIA = 5;
+    for (let i = 0; i < datos.length; i += CONCURRENCIA) {
+        const lote = datos.slice(i, i + CONCURRENCIA);
+
+        const resultados = await Promise.allSettled(lote.map(async (fila, idxEnLote) => {
             const body: Record<string, string> = {};
             for (const [colArchivo, campoAPI] of Object.entries(mapeo)) {
                 body[campoAPI] = fila[colArchivo] ?? '';
             }
-            // Hacer POST al endpoint de la API
             const respuesta = await fetch(url, {
                 method: 'POST',
-                headers: headers,
+                headers,
                 body: JSON.stringify(body),
             });
             if (respuesta.ok) {
-                resultado.insertados++;
+                return { exito: true };
+            } else {
+                return {
+                    exito: false,
+                    mensaje: `Fila ${i + idxEnLote + 2}: HTTP ${respuesta.status} - ${respuesta.statusText}`
+                };
+            }
+        }));
+
+        for (const r of resultados) {
+            if (r.status === 'fulfilled') {
+                if (r.value.exito) {
+                    resultado.insertados++;
+                } else {
+                    resultado.errores++;
+                    resultado.detalles.push(r.value.mensaje!);
+                }
             } else {
                 resultado.errores++;
-                resultado.detalles.push(`Fila ${i + 2}: HTTP ${respuesta.status} - ${respuesta.statusText}`);
+                resultado.detalles.push(`Error en lote ${i + 1}: ${(r as PromiseRejectedResult).reason?.message || 'desconocido'}`);
             }
-        } catch (e: any) {
-            resultado.errores++;
-            resultado.detalles.push(`Fila ${i + 2}: ${e.message}`);
         }
     }
     return resultado;

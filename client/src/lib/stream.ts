@@ -11,7 +11,8 @@ export interface StreamEvent {
     mensaje?: string;// Para tipo='error'
 
     // Campos para tipo='export_url':
-    url?: string;// URL del endpoint de descarga
+    // SEC-04: sql se envía directo (ya no como query string en URL)
+    sql?: string;   // Consulta SQL a ejecutar en el servidor
     formato?: string;// xlsx | csv | pdf
     titulo?: string;// Nombre del archivo
 
@@ -34,7 +35,7 @@ export interface StreamCallbacks {
     onTool: (nombre: string) => void; // El agente esta usando un tool
     onFin: (tokens: number) => void; // Respuesta completa
     onError: (mensaje: string) => void; // Error
-    onExportUrl: (url: string, formato: string, titulo: string) => void;
+    onExportUrl: (sql: string, formato: string, titulo: string) => void;
     onImportReady: (mapeo: Record<string, string>, destino: 'bd' | 'api', tabla?: string, endpoint?: string) => void;
 }
 
@@ -103,8 +104,9 @@ export async function streamAgente(
                         callbacks.onError(evento.mensaje ?? 'Error desconocido');
                         break;
                     case 'export_url':
-                        if (evento.url && evento.formato && evento.titulo) {
-                            callbacks.onExportUrl(evento.url, evento.formato, evento.titulo);
+                        // SEC-04: ahora recibimos sql en lugar de url
+                        if (evento.sql && evento.formato && evento.titulo) {
+                            callbacks.onExportUrl(evento.sql, evento.formato, evento.titulo);
                         }
                         break;
                     case 'import_ready':
