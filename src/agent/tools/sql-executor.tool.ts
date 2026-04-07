@@ -59,7 +59,7 @@ export const sqlExecutorTool = tool({
     // Normalización para análisis de seguridad
     const sqlLower = sql.trim().toLowerCase().replace(/\s+/g, " ");
 
-    // CAPA 1: Bloqueo de Comandos Destructivos
+    // CAPA 1: Bloqueo de Comandos Destructivos (DDL)
     for (const palabra of SIEMPRE_BLOQUEADAS) {
       const regex = new RegExp(`\\b${palabra}\\b`, "i");
       if (regex.test(sqlLower)) {
@@ -70,12 +70,37 @@ export const sqlExecutorTool = tool({
       }
     }
 
+    // CAPA 2: Detección de patrones de inyección SQL comunes
+    const patronesPeligrosos = [
+      /\bunion\b/i,                // UNION SELECT para extraer datos no autorizados
+      /--\s*$/,                    // Comentario SQL (fin de línea)
+      /#/,                         // Comentario MySQL
+      /\/\*[\s\S]*\*\//,           // Comentario multilínea
+      /information_schema/i,       // Acceso a metadatos de BD
+      /sys\.[a-z0-9_]+/i,          // Tablas del sistema (mysql, performance_schema)
+      /char\s*\(/i,                // Funciones de ofuscación
+      /sleep\s*\(/i,               // Ataques DoS
+      /benchmark\s*\(/i,           // Ataques DoS
+      /load_file\s*\(/i,           // Lectura de archivos del servidor
+      /into\s+outfile/i,           // Escritura de archivos en servidor
+      /xp_cmdshell/i,              // Ejecución de comandos (SQL Server, por si acaso)
+    ];
+
+    for (const regex of patronesPeligrosos) {
+      if (regex.test(sqlLower)) {
+        return {
+          exito: false,
+          error: 'Consulta rechazada por seguridad: posible inyección SQL detectada.',
+        };
+      }
+    }
+
     // Identificar si la consulta pretende alterar datos
     const esEscritura = REQUIEREN_CONFIRMACION.some((p) =>
       new RegExp(`\\b${p}\\b`, "i").test(sqlLower),
     );
 
-    // CAPA 2: Solicitud de confirmación humana para INSERT/UPDATE/DELETE
+    // CAPA 3: Solicitud de confirmación humana para INSERT/UPDATE/DELETE
     if (esEscritura && !confirmado) {
       return {
         exito: false,
@@ -83,7 +108,7 @@ export const sqlExecutorTool = tool({
       };
     }
 
-    // CAPA 3: Protección de la tabla de usuarios
+    // CAPA 4: Protección de la tabla de usuarios
     // Se delega a 'usuario-executor.tool' para asegurar el hashing de contraseñas
     if (esEscritura && sqlLower.includes('usuarios')) {
       return {
@@ -102,7 +127,7 @@ export const sqlExecutorTool = tool({
       // Ejecución real en el pool de conexiones de MySQL
       const [filas] = await pool.query<any>(sqlFinal);
       const datos = Array.isArray(filas) ? filas : [filas];
-      
+
       return {
         exito: true,
         total_filas: datos.length,
@@ -111,10 +136,10 @@ export const sqlExecutorTool = tool({
       };
     } catch (e: any) {
       // Captura de errores de sintaxis o de base de datos
-      return { 
-        exito: false, 
-        error: `Error de base de datos: ${e.message}`, 
-        sql_intentado: sqlFinal 
+      return {
+        exito: false,
+        error: `Error de base de datos: ${e.message}`,
+        sql_intentado: sqlFinal,
       };
     }
   },
