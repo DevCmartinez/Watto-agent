@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+
 // Tipos del usuario autenticado
 interface Usuario {
     id: number;
@@ -7,29 +7,24 @@ interface Usuario {
     email: string;
     rol: 'admin' | 'usuario';
 }
+
 interface AuthStore {
     usuario: Usuario | null;
-    token: string | null;
     // Acciones
-    setAuth: (usuario: Usuario, token: string) => void;
+    setAuth: (usuario: Usuario) => void;
     cerrarSesion: () => void;
     estaAutenticado: () => boolean;
 }
-export const useAuthStore = create<AuthStore>()(
-    // persist guarda el estado en localStorage automaticamente
-    // Cuando el usuario recarga la pagina, el token se restaura
-    persist(
-        (set, get) => ({
-            usuario: null,
-            token:
-                null,
-            setAuth: (usuario, token) => set({ usuario, token }),
-            cerrarSesion: () => set({ usuario: null, token: null }),
-            // Funcion derivada — verifica si hay sesion activa
-            estaAutenticado: () => get().token !== null,
-        }),
-        {
-            name: 'watto-auth', // Clave en localStorage
-        }
-    )
-);
+
+/**
+ * SEC-01: Store de autenticación sin persistencia en localStorage.
+ * El token JWT ahora se almacena en cookie HttpOnly (más seguro contra XSS).
+ * Los datos del usuario se guardan solo en memoria (se pierden al recargar).
+ * Al recargar, se puede llamar a /api/auth/perfil para recuperar sesión.
+ */
+export const useAuthStore = create<AuthStore>()((set, get) => ({
+    usuario: null,
+    setAuth: (usuario) => set({ usuario }),
+    cerrarSesion: () => set({ usuario: null }),
+    estaAutenticado: () => get().usuario !== null,
+}));

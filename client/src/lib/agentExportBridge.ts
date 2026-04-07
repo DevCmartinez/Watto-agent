@@ -1,5 +1,4 @@
 import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore } from '@/stores/authStore';
 
 /**
  * SEC-04: El SQL ya no viaja en la URL como query string (GET).
@@ -14,15 +13,14 @@ export async function descargarExportacion(
     titulo: string
 ): Promise<void> {
     const { mostrarToast } = useToastStore.getState();
-    const token = useAuthStore.getState().token;
 
     const nombreArchivo = `${titulo}.${formato}`;
     try {
         // SEC-04: POST con el SQL en el body — ya no queda expuesto en la URL
+        // SEC-01: Cookie HttpOnly se envia automáticamente
         const response = await fetch('/api/export', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ sql, formato, titulo }),

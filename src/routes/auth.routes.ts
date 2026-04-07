@@ -44,4 +44,12 @@ router.post("/registro", limiterAuth, validarRegistro, authController.registro);
 // RUTAS PROTEGIDAS — Solo accesibles con token JWT válido
 router.get("/perfil", authMiddleware, authController.perfil);
 
+/**
+ * Cierre de sesión (logout).
+ * Elimina la cookie HttpOnly del token JWT en el cliente.
+ * No requiere autenticación previa porque la cookie se borra igual.
+ * @route POST /api/auth/logout
+ */
+router.post("/logout", authController.logout);
+
 export default router;

@@ -1,19 +1,17 @@
 import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore } from '@/stores/authStore';
 import { type ArchivoImport } from '@/types';
 
 // Procesar la importacion cuando el agente genera el mapeo
 // Esta funcion se llama desde useChat cuando llega el evento import_ready
 export async function procesarImportAgente(
-    mapeo: Record<string, string>,// { columna_archivo: campo_bd }
-    destino: 'bd' | 'api',// A donde importar
-    archivo: ArchivoImport,// El archivo completo con todos los datos
-    tabla?: string,// Nombre de la tabla (si destino=bd)
-    endpoint?: string// Ruta del endpoint (si destino=api)
+    mapeo: Record<string, string>, // { columna_archivo: campo_bd }
+    destino: 'bd' | 'api', // A donde importar
+    archivo: ArchivoImport, // El archivo completo con todos los datos
+    tabla?: string, // Nombre de la tabla (si destino=bd)
+    endpoint?: string // Ruta del endpoint (si destino=api)
 ): Promise<void> {
 
     const { mostrarToast } = useToastStore.getState();
-    const token = useAuthStore.getState().token;
 
     try {
         // Mostrar toast de inicio
@@ -23,11 +21,11 @@ export async function procesarImportAgente(
         );
 
         // Hacer POST al endpoint de importacion del backend
+        // SEC-01: La cookie HttpOnly se envia automaticamente (no se pasa token manual)
         const response = await fetch('/api/import', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
                 destino,

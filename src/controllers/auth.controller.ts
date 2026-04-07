@@ -19,8 +19,9 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
   try {
     const { email, password } = req.body;
     // Llama al servicio de autenticación para validar los datos
-    const resultado = await authService.login(email, password);
-    // Devuelve respuesta exitosa con el token y datos del usuario
+    // La cookie HttpOnly se establece en el servicio
+    const resultado = await authService.login(email, password, res);
+    // Devuelve respuesta exitosa con datos del usuario (sin token)
     sendSuccess(res, resultado, "Login exitoso");
   } catch (error: any) {
     // Manejo específico para errores de credenciales (401)
@@ -43,7 +44,8 @@ export async function registro(req: Request, res: Response, next: NextFunction):
   try {
     const { nombre, email, password } = req.body;
     // Llama al servicio para persistir el nuevo usuario
-    const resultado = await authService.registrar({ nombre, email, password });
+    // La cookie HttpOnly se establece en el servicio
+    const resultado = await authService.registrar({ nombre, email, password }, res);
     sendSuccess(res, resultado, "Usuario registrado exitosamente", 201);
   } catch (error: any) {
     // Si el error tiene un código de estado definido (ej: conflicto 409)
@@ -65,5 +67,16 @@ export async function registro(req: Request, res: Response, next: NextFunction):
 export function perfil(req: Request, res: Response): void {
   // El objeto usuario fue inyectado en la petición por el middleware de autenticación
   sendSuccess(res, req.usuario, "Perfil del usuario autenticado");
+}
+
+/**
+ * Cierra la sesión del usuario eliminando la cookie de autenticación.
+ * @route POST /api/auth/logout
+ * @param req Objeto de petición Express.
+ * @param res Objeto de respuesta Express.
+ */
+export function logout(req: Request, res: Response): void {
+  authService.logout(res);
+  sendSuccess(res, null, "Sesión cerrada exitosamente");
 }
 

@@ -5,6 +5,7 @@
  * Centraliza la validación de credenciales, hashing de contraseñas y emisión de JWT.
  */
 import jwt from "jsonwebtoken";
+import { Response } from "express"; // SEC-01: Tipo de respuesta Express para cookies
 import { env } from "../config/env";
 import { hashear, verificarHash } from "../utils/hash.util";
 import * as usuarioRepo from "../repositories/usuario.repository";
@@ -36,6 +37,37 @@ function generarToken(payload: JwtPayload): string {
 }
 
 /**
+ * Configura una cookie segura para el token JWT usando cookie-parser.
+ * SEC-01: httpOnly previene acceso via JavaScript (XSS).
+ * SEC-01: secure solo en HTTPS (producción).
+ * SEC-01: SameSite=Strict previene CSRF.
+ */
+function setAuthCookie(res: Response, token: string): void {
+  const esProduccion = process.env.NODE_ENV === 'production';
+  const maxAgeMs = (parseInt(env.jwt.expiresIn) || 24) * 60 * 60 * 1000; // convertir horas a ms
+
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: esProduccion, // Solo enviar via HTTPS en producción
+    sameSite: 'strict' as const,
+    maxAge: maxAgeMs,
+    path: '/',
+  });
+}
+
+/**
+ * Elimina la cookie de autenticación (logout).
+ */
+function clearAuthCookie(res: Response): void {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    path: '/',
+  });
+}
+
+/**
  * Procesa el inicio de sesión validando email y contraseña.
  * @calledBy login en [auth.controller.ts]
  * @param email Correo electrónico del usuario.
@@ -46,7 +78,8 @@ function generarToken(payload: JwtPayload): string {
 export async function login(
   email: string,
   password: string,
-): Promise<{ usuario: UsuarioPublico; token: string }> {
+  res?: Response, // Opcional: si se provee, se establece cookie HttpOnly
+): Promise<{ usuario: UsuarioPublico }> {
   // 1. Localizar registro en la base de datos (vía repositorio)
   const usuario = await usuarioRepo.findByEmail(email);
   if (!usuario) {
@@ -66,9 +99,14 @@ export async function login(
     rol: usuario.rol,
   });
 
-  // 4. Sanitización de datos (Eliminamos el password antes de devolver al cliente)
+  // 4. Si hay respuesta (request), establecer cookie HttpOnly
+  if (res) {
+    setAuthCookie(res, token);
+  }
+
+  // 5. Sanitización de datos (Eliminamos el password antes de devolver al cliente)
   const { password: _, ...usuarioPublico } = usuario;
-  return { usuario: usuarioPublico, token };
+  return { usuario: usuarioPublico };
 }
 
 /**
@@ -80,7 +118,8 @@ export async function login(
  */
 export async function registrar(
   datos: CrearUsuarioDto,
-): Promise<{ usuario: UsuarioPublico; token: string }> {
+  res?: Response, // Opcional: si se provee, se establece cookie HttpOnly
+): Promise<{ usuario: UsuarioPublico }> {
   // Verificación de unicidad de identidad
   const existe = await usuarioRepo.emailExiste(datos.email);
   if (existe) {
@@ -106,7 +145,20 @@ export async function registrar(
     rol: usuario.rol,
   });
 
+  // Si hay respuesta (request), establecer cookie HttpOnly
+  if (res) {
+    setAuthCookie(res, token);
+  }
+
   const { password: _, ...usuarioPublico } = usuario;
-  return { usuario: usuarioPublico, token };
+  return { usuario: usuarioPublico };
+}
+
+/**
+ * Cierra la sesión del usuario eliminando la cookie de autenticación.
+ * @param res Response de Express para manipular cookies
+ */
+export function logout(res: Response): void {
+  clearAuthCookie(res);
 }
 

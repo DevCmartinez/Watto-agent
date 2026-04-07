@@ -8,6 +8,7 @@ import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser"; // SEC-01: Parsear cookies HttpOnly (XSS protection)
 import { env } from "./config/env";
 import { connectDatabase } from "./config/database";
 import { inicializarAgente } from "./agent/tools/autonomus-agent.service";
@@ -23,6 +24,7 @@ const app = express();
  */
 app.use(helmet());                     // Protección de cabeceras HTTP (XSS, Clickjacking, etc.)
 app.use(cors());                       // Gestión de Intercambio de Recursos de Origen Cruzado
+app.use(cookieParser()); // SEC-01: Habilitar lectura de cookies (para auth middleware)
 app.use(express.json({ limit: "10mb" })); // Límite de carga de JSON (importante para reportes grandes)
 app.use(express.urlencoded({ extended: true }));
 

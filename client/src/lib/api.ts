@@ -24,29 +24,27 @@ export class ApiError extends Error {
     }
 }
 // Funcion base para todas las peticiones
+// SEC-01: Las cookies HttpOnly se envian automaticamente por el navegador
+// No es necesario agregar手动mente el token JWT.
 async function request<T>(
     endpoint: string,
     options: RequestInit = {}
 ): Promise<T> {
-    // Leer el token del store de Zustand
-    const token = useAuthStore.getState().token;
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         ...(options.headers as Record<string, string>),
     };
-    // Agregar JWT si existe
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-    }
+    // No se agrega Authorization header; las cookies se envian automaticamente
     const response = await fetch(`${BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'include', // Asegura que las cookies se envien en cross-site requests
     });
-    // Si la respuesta es 401 y no es un login, cerrar sesion automaticamente
-    if (response.status === 401 && endpoint !== '/auth/login') {
+    // Si la respuesta es 401 y no es un login/registro, cerrar sesión automáticamente
+    if (response.status === 401 && !['/auth/login', '/auth/registro'].includes(endpoint)) {
         useAuthStore.getState().cerrarSesion();
         window.location.href = '/login';
-        throw new ApiError(401, 'Sesion expirada. Por favor inicia sesion de nuevo.');
+        throw new ApiError(401, 'Sesión expirada. Por favor inicia sesión de nuevo.');
     }
     const data = await response.json();
     if (!response.ok) {

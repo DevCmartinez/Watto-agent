@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/authStore';
 
 // Tipos de eventos que envia el backend
 export type StreamEventType = 'texto' | 'tool' | 'fin' | 'error' | 'export_url' | 'import_ready';
@@ -48,20 +47,19 @@ export interface StreamCallbacks {
  * Escucha eventos 'texto', 'tool', 'fin', 'error' y 'export_url'.
  */
 export async function streamAgente(
-
     pregunta: string,
     historial: MensajeHistorial[],
     callbacks: StreamCallbacks,
     signal?: AbortSignal // Para cancelar el stream
 ): Promise<void> {
-    const token = useAuthStore.getState().token;
+    // SEC-01: No se envía token manual; la cookie HttpOnly se incluye automáticamente
     const response = await fetch('/api/agent/stream', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ pregunta, historial }), signal, // AbortSignal para cancelar
+        body: JSON.stringify({ pregunta, historial }),
+        signal, // AbortSignal para cancelar
     });
     if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -86,7 +84,7 @@ export async function streamAgente(
         for (const line of lines) {
             const dataLine = line.split('\n').find(l => l.startsWith('data:'));
             if (!dataLine) continue;
-            const trimmed = dataLine.slice(5).trim(); // quitar "data:" 
+            const trimmed = dataLine.slice(5).trim(); // quitar "data:"
             if (!trimmed) continue;
             try {
                 const evento: StreamEvent = JSON.parse(trimmed);

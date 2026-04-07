@@ -21,39 +21,40 @@ declare global {
 }
 
 /**
- * Middleware de protección de ruta por Token.
+ * Middleware de protección de ruta por Token (Cookie HttpOnly).
+ * SEC-01: Lee el token JWT desde cookie HttpOnly (no de localStorage).
+ * SEC-01: Esto previene robo de token via XSS porque JS no puede leer HttpOnly cookies.
+ *
  * @calledBy Rutas que requieren sesión activa (ej: /api/agent/*, /api/auth/perfil)
- * @param req Petición Express (se espera header Authorization: Bearer <TOKEN>)
+ * @param req Petición Express (espera cookie: token=<JWT>)
  * @param res Respuesta Express
  * @param next Siguiente middleware en la cadena
  */
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // 1. Extraer el header Authorization
-  const authHeader = req.headers.authorization;
+  // 1. Extraer token desde cookie (Configurada como HttpOnly en auth.service.ts)
+  const token = req.cookies?.token;
 
-  // 2. Validar el formato del Bearer token
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ 
-      exitoso: false, 
-      mensaje: "Acceso no autorizado. Se requiere un token de seguridad válido." 
+  // 2. Validar que existe token
+  if (!token) {
+    res.status(401).json({
+      exitoso: false,
+      mensaje: "Acceso no autorizado. No se encontró sesión activa.",
     });
     return;
   }
 
-  const token = authHeader.split(" ")[1];
-
   try {
     // 3. Verificar la firma del token con la clave secreta del servidor
     const payload = jwt.verify(token, env.jwt.secret) as JwtPayload;
-    
+
     // 4. Inyectar datos del usuario en la petición para uso posterior en controladores
     req.usuario = payload;
     next();
   } catch (error) {
     // Error si el token fue manipulado, expiró o es inválido
-    res.status(401).json({ 
-      exitoso: false, 
-      mensaje: "La sesión ha expirado o el token es inválido. Por favor, inicie sesión nuevamente." 
+    res.status(401).json({
+      exitoso: false,
+      mensaje: "La sesión ha expirado o el token es inválido. Por favor, inicie sesión nuevamente.",
     });
   }
 }
