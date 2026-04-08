@@ -31,6 +31,7 @@ export class AppError extends Error {
  * @returns String conteniendo el JWT.
  */
 function generarToken(payload: JwtPayload): string {
+  // Using any for expiresIn due to jsonwebtoken type quirks
   return jwt.sign(payload, env.jwt.secret, {
     expiresIn: env.jwt.expiresIn as any,
   });

@@ -26,7 +26,24 @@ export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
   console.log(`[${env.agent.name}] Está Leyendo el esquema OpenAPI...]`);
   const url = env.agent.api.openApiUrl;
   if (!url) throw new Error("AGENT_API_OPENAPI_URL no configurado en .env");
-  let contenido: any;
+
+  // Tipo para respuesta JSON de OpenAPI (simplificado)
+  interface OpenAPIDoc {
+    paths?: Record<string, Record<string, {
+      summary?: string;
+      description?: string;
+      parameters?: Array<{
+        name: string;
+        in: string;
+        schema?: { type?: string };
+        required?: boolean;
+        description?: string;
+      }>;
+      responses?: Record<string, { description?: string }>;
+    }>>;
+  }
+
+  let contenido: OpenAPIDoc;
   if (url.startsWith("http")) {
     const resp = await fetch(url, {
       headers: env.agent.api.authToken
@@ -34,26 +51,27 @@ export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
         : {},
     });
     if (!resp.ok) throw new Error(`Error descargando OpenAPI: ${resp.status}`);
-    contenido = await resp.json();
+    contenido = await resp.json() as OpenAPIDoc;
   } else {
     contenido = JSON.parse(
       fs.readFileSync(path.resolve(process.cwd(), url), "utf-8"),
-    );
+    ) as OpenAPIDoc;
   }
+
   const endpoints: EsquemaEndpoint[] = [];
-  for (const ruta of Object.keys(contenido.paths || {})) {
-    for (const metodo of Object.keys(contenido.paths[ruta])) {
+  const paths = contenido.paths || {};
+  for (const ruta of Object.keys(paths)) {
+    const rutaObj = paths[ruta] || {};
+    for (const metodo of Object.keys(rutaObj)) {
       if (!["get", "post", "put", "patch", "delete"].includes(metodo)) continue;
-      const op = contenido.paths[ruta][metodo];
-      const params: EsquemaParametro[] = (op.parameters || []).map(
-        (p: any) => ({
-          nombre: p.name,
-          ubicacion: p.in,
-          tipo: p.schema?.type || "string",
-          requerido: p.required || false,
-          descripcion: p.description || "",
-        }),
-      );
+      const op = rutaObj[metodo];
+      const params: EsquemaParametro[] = (op.parameters || []).map((p) => ({
+        nombre: p.name,
+        ubicacion: p.in,
+        tipo: p.schema?.type || "string",
+        requerido: p.required || false,
+        descripcion: p.description || "",
+      }));
       const resp200 =
         (op.responses || {})["200"] || (op.responses || {})["201"] || {};
       endpoints.push({

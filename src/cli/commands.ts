@@ -1,6 +1,7 @@
 import { ModelMessage } from "ai";
 import { c, mostrarError } from "./ui";
 import pool from "../config/database";
+import { RowDataPacket } from "mysql2";
 import { inicializarAgente, listo, reiniciarAgente } from "../agent/tools/autonomus-agent.service";
 
 export type ResultadoCmd = "continuar" | "salir" | "no_es_comando";
@@ -33,13 +34,14 @@ export async function procesarComando(
 
     case "/stats":
       try {
-        const [[rows]] = await pool.query<any>(
+        const [[rows]] = await pool.query<RowDataPacket[]>(
           "SELECT COUNT(*) as total FROM information_schema.tables WHERE table_schema = DATABASE()",
         );
+        const firstRow = rows[0] as { total?: number };
         console.log("");
         console.log(
           c.titulo(`
-Tablas en la BD: ${(rows as any)[0].total}`),
+Tablas en la BD: ${firstRow.total || 0}`),
         );
         console.log("");
       } catch {

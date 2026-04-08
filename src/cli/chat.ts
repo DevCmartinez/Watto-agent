@@ -8,7 +8,7 @@ import {
   imprimirChunk,
   finRespuesta,
 } from "./ui";
-import { consultarAgenteStreaming } from "../agent/tools/autonomus-agent.service";
+import { consultarAgenteStreaming, StreamingResponse } from "../agent/tools/autonomus-agent.service";
 
 export const historial: ModelMessage[] = [];
 
@@ -20,7 +20,7 @@ export async function procesarPregunta(pregunta: string): Promise<void> {
   spinner.start();
 
   // Objeto que imita Response de Express pero escribe en la terminal
-  const fakeRes: any = {
+  const fakeRes: StreamingResponse = {
     setHeader: () => { },
     end: () => {
       if (!spinnerDetenido) {
@@ -86,6 +86,7 @@ export async function procesarPregunta(pregunta: string): Promise<void> {
         /* ignorar JSON malformado */
       }
     },
+    headersSent: false,
   };
   await consultarAgenteStreaming(pregunta.trim(), fakeRes, historial);
 }

@@ -1,5 +1,14 @@
 import { generateText, streamText, ModelMessage, stepCountIs } from "ai";
 import { Response } from "express";
+
+// Interfaz mínima para respuestas de streaming (compatible con Express Response y Fakes)
+export interface StreamingResponse {
+  setHeader(name: string, value?: string | number | readonly string[]): void;
+  write(data: string): boolean | void;
+  end(): void;
+  headersSent: boolean;
+}
+
 import { env } from "../../config/env";
 import { aiModel, AI_CONFIG } from "../../ai/config/ai.config";
 import { descubrirEsquemaBD, invalidarCache } from "../../agent/discovery/schema-discovery.service";
@@ -145,13 +154,12 @@ export async function consultarAgente(
 /**
  * @name consultarAgenteStreaming
  * @calledBy [src/controllers/agent.controller.ts] vía endpoint `/api/agent/stream`.
- * @description Procesa una pregunta del usuario, ejecuta tools (si es necesario) 
+ * @description Procesa una pregunta del usuario, ejecuta tools (si es necesario)
  * y devuelve la respuesta en modo streaming al frontend via SSE.
  */
 export async function consultarAgenteStreaming(
-
   pregunta: string,
-  res: Response,
+  res: StreamingResponse,
   historial: ModelMessage[] = [],
 ): Promise<void> {
   verificar();

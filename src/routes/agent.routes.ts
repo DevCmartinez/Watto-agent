@@ -4,6 +4,19 @@ import { authMiddleware } from "../middlewares/auth.middleware";
 import { validarConsulta } from "../middlewares/validate.middleware";
 import rateLimit from "express-rate-limit";
 
+// Extensión del tipo Request para incluir usuario (inyectado por authMiddleware)
+declare global {
+  namespace Express {
+    interface Request {
+      usuario?: {
+        id: number;
+        email: string;
+        rol: 'admin' | 'usuario';
+      };
+    }
+  }
+}
+
 const router = Router();
 
 /**
@@ -16,8 +29,8 @@ const limiterIA = rateLimit({
     max: 20,             // 20 consultas por minuto por usuario
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => (req as any).usuario?.id?.toString() ?? req.ip ?? 'unknown',
-    skip: (req) => (req as any).usuario?.rol === 'admin',
+    keyGenerator: (req) => req.usuario?.id?.toString() ?? req.ip ?? 'unknown',
+    skip: (req) => req.usuario?.rol === 'admin',
     message: { exitoso: false, mensaje: 'Demasiadas consultas. Espera un momento e intenta de nuevo.' },
 });
 

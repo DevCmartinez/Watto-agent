@@ -23,12 +23,13 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     const resultado = await authService.login(email, password, res);
     // Devuelve respuesta exitosa con datos del usuario (sin token)
     sendSuccess(res, resultado, "Login exitoso");
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Manejo específico para errores de credenciales (401)
-    if (error.statusCode === 401) {
-      sendError(res, error.message, 401);
+    const err = error as { statusCode?: number; message?: string };
+    if (err.statusCode === 401) {
+      sendError(res, err.message || "Credenciales inválidas", 401);
     } else {
-      next(error);
+      next(error as Error);
     }
   }
 }
@@ -47,12 +48,13 @@ export async function registro(req: Request, res: Response, next: NextFunction):
     // La cookie HttpOnly se establece en el servicio
     const resultado = await authService.registrar({ nombre, email, password }, res);
     sendSuccess(res, resultado, "Usuario registrado exitosamente", 201);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Si el error tiene un código de estado definido (ej: conflicto 409)
-    if (error.statusCode) {
-      sendError(res, error.message, error.statusCode);
+    const err = error as { statusCode?: number; message?: string };
+    if (err.statusCode) {
+      sendError(res, err.message || "Error", err.statusCode);
     } else {
-      next(error);
+      next(error as Error);
     }
   }
 }

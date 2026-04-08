@@ -9,8 +9,9 @@ import { procesarComando } from "./commands";
 import { procesarPregunta, historial } from "./chat";
 
 async function iniciarCLI(): Promise<void> {
-  process.on("unhandledRejection", (err: any) => {
-    const msg = err?.message?.toLowerCase() || "";
+  process.on("unhandledRejection", (err: unknown) => {
+    const error = err as { message?: string } | Error;
+    const msg = (error.message || String(error)).toLowerCase();
     if (
       msg.includes("quota") ||
       msg.includes("resource_exhausted") ||
@@ -18,7 +19,7 @@ async function iniciarCLI(): Promise<void> {
     ) {
       // No hacer nada — el catch del streaming ya maneja esto
     } else {
-      console.error("Error no manejado:", err);
+      console.error("Error no manejado:", error);
     }
   });
 
@@ -68,8 +69,9 @@ async function iniciarCLI(): Promise<void> {
       rl.close();
     });
   });
-  servidor.on("error", (err: any) => {
-    if (err.code === "EADDRINUSE")
+  servidor.on("error", (err: unknown) => {
+    const error = err as { code?: string; message?: string };
+    if (error.code === "EADDRINUSE")
       console.error(
         c.error(`
 Puerto ${env.port} en uso. Cambia PORT en .env`),
@@ -77,7 +79,7 @@ Puerto ${env.port} en uso. Cambia PORT en .env`),
     else
       console.error(
         c.error(`
-Error: ${err.message}`),
+Error: ${error.message || String(err)}`),
       );
     process.exit(1);
   });

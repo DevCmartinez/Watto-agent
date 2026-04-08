@@ -1,5 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 
+// Tipos para errores específicos
+interface MySQLError extends Error {
+  code?: string;
+  errno?: number;
+  sqlMessage?: string;
+  sqlState?: string;
+}
+
+interface HttpError extends Error {
+  status?: number;
+  statusCode?: number;
+}
+
 export function errorMiddleware(
   err: Error,
   req: Request,
@@ -8,7 +21,8 @@ export function errorMiddleware(
 ): void {
   console.error(`[Error] ${err.message}`);
 
-  const codigo = (err as any).status || (err as any).statusCode;
+  // Extraer código HTTP (status) del error
+  const codigo = (err as HttpError).status || (err as HttpError).statusCode;
   const mensaje = err.message.toLowerCase();
 
   // SEC-06: Solo exponer mensajes detallados en desarrollo
@@ -16,7 +30,7 @@ export function errorMiddleware(
   const esCodigo5xx = !codigo || codigo >= 500;
 
   // Error de MySQL: clave duplicada (ej: email ya existe)
-  if ((err as any).code === "ER_DUP_ENTRY") {
+  if ((err as MySQLError).code === "ER_DUP_ENTRY") {
     res.status(409).json({
       exitoso: false,
       mensaje: "El E-mail ya existe",
