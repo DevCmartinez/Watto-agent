@@ -20,3 +20,4 @@ client/.env.*.local
 *.pem
 *.key
 *.crt
+.cache/

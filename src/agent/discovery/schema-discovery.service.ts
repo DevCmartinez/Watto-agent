@@ -22,7 +22,13 @@ export interface RelacionForanea {
 }
 
 // Cache para evitar consultas repetidas
-let cache: EsquemaTabla[] | null = null;
+// PERF-02: Agregar metadata de cache para TTL
+interface SchemaCache {
+  data: EsquemaTabla[] | null;
+  timestamp: number;
+}
+let cache: SchemaCache = { data: null, timestamp: 0 };
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
 
 // Tipos para resultados de MySQL
 interface ShowTableRow {
@@ -43,7 +49,11 @@ interface ForeignKeyRow extends RowDataPacket {
 
 // Función para descubrir el esquema de la base de datos
 export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
-  if (cache) return cache;
+  // PERF-02: Verificar TTL del cache
+  if (cache.data && (Date.now() - cache.timestamp) < CACHE_TTL_MS) {
+    return cache.data;
+  }
+
   console.log(`[${env.agent.name}] Estoy leyendo el esquema de MySQL...`);
 
   // Obtener lista de tablas
@@ -95,11 +105,11 @@ REFERENCED_TABLE_NAME IS NOT NULL`,
       })),
     });
   }
-  cache = esquemas;
+  cache = { data: esquemas, timestamp: Date.now() };
   console.log(`[${env.agent.name}] ${esquemas.length} tabla(s) procesada(s)`);
   return esquemas;
 }
 
 export function invalidarCache(): void {
-  cache = null;
+  cache = { data: null, timestamp: 0 };
 }

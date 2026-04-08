@@ -201,6 +201,14 @@ export async function consultarAgenteStreaming(
   const originalConsoleError = console.error;
   console.error = () => { };
 
+  // PERF-05: Timeout para evitar streams colgados (2 minutos)
+  const TIMEOUT_MS = 120 * 1000;
+  let timeoutId = setTimeout(() => {
+    console.error = originalConsoleError;
+    res.write(`data: ${JSON.stringify({ tipo: 'error', mensaje: 'Tiempo de espera agotado. La consulta tardó demasiado.' })}\n\n`);
+    res.end();
+  }, TIMEOUT_MS);
+
   try {
     const resultado = streamText({
       model: aiModel,
@@ -216,6 +224,12 @@ export async function consultarAgenteStreaming(
     let bloqueTecnicoAbierto = false;
 
     for await (const parte of resultado.fullStream) {
+      clearTimeout(timeoutId); // Reiniciar timeout con cada evento recibido
+      timeoutId = setTimeout(() => {
+        console.error = originalConsoleError;
+        res.write(`data: ${JSON.stringify({ tipo: 'error', mensaje: 'Tiempo de espera agotado. La consulta tardó demasiado.' })}\n\n`);
+        res.end();
+      }, TIMEOUT_MS);
       if (parte.type === 'text-delta') {
         const chunk = parte.text || '';
         textoAcumulado += chunk;
@@ -298,6 +312,7 @@ export async function consultarAgenteStreaming(
     console.error = originalConsoleError;
 
   } catch (e: any) {
+    clearTimeout(timeoutId);
     console.error = originalConsoleError;
     const msg = e?.message?.toLowerCase() || '';
     const esRateLimit = msg.includes('quota') || msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('maxretriesexceeded');
@@ -309,6 +324,7 @@ export async function consultarAgenteStreaming(
         : 'Error procesando la consulta.',
     })}\n\n`);
   } finally {
+    clearTimeout(timeoutId);
     console.error = originalConsoleError;
     res.end();
   }

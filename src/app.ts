@@ -8,6 +8,7 @@ import "dotenv/config";
 import express from "express";
 import helmet from "helmet";
 import cors from "cors";
+import compression from "compression";
 import cookieParser from "cookie-parser"; // SEC-01: Parsear cookies HttpOnly (XSS protection)
 import { env } from "./config/env";
 import { connectDatabase } from "./config/database";
@@ -23,6 +24,7 @@ const app = express();
  * CONFIGURACIÓN DE MIDDLEWARES GLOBALES
  */
 app.use(helmet());                     // Protección de cabeceras HTTP (XSS, Clickjacking, etc.)
+app.use(compression());                // PERF-06: Compresión gzip para respuestas grandes
 app.use(cors());                       // Gestión de Intercambio de Recursos de Origen Cruzado
 app.use(cookieParser()); // SEC-01: Habilitar lectura de cookies (para auth middleware)
 app.use(express.json({ limit: "10mb" })); // Límite de carga de JSON (importante para reportes grandes)
