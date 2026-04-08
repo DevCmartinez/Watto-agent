@@ -276,39 +276,39 @@ res.status(429).json({
 
 ### 🟡 IMPORTANTES
 
-#### 7. Exceso de `any` types (31 ocurrencias)
+#### 7. Exceso de `any` types (EN PROGRESO)
 **Ubicación:** Múltiples archivos
 
 **Problema:**
 Se pierde type safety de TypeScript, mayor riesgo de errores en runtime.
 
-**Ejemplos:**
-```typescript
-pool.query<any>(sql)              // src/agent/tools/sql-executor.tool.ts:103
-(err as any)                      // src/middlewares/error.middleware.ts:11
-data: any                         // src/utils/response.util.ts:5
-```
+**Estado actual:**
+- ✅ **8 archivos corregidos** (15-20 any eliminados):
+  - `utils/response.util.ts`: genérico `<T>`
+  - `agent/discovery/schema-discovery.service.ts`: `RowDataPacket[]`
+  - `agent/tools/sql-executor.tool.ts`: tipos fuertes + `unknown` catch
+  - `agent/tools/usuario-executor.tool.ts`: `RowDataPacket[]`, `unknown[]`
+  - `controllers/export.controller.ts`: tipo `DataRow`
+  - `controllers/import.controller.ts`: `unknown` catches
+  - `middlewares/validate.middleware.ts`: type-safe error extraction
+  - `agent/tools/api-executor.tool.ts`: `unknown` + type guards
+
+**Pendiente:** ~20 any en:
+- `middlewares/error.middleware.ts` (2)
+- `routes/agent.routes.ts` (2)
+- `services/auth.service.ts` (1)
+- `controllers/auth.controller.ts` (2)
+- `agent/tools/openapi-discovery.service.ts` (2)
+- `cli/chat.ts` (1)
+- `cli/index.ts` (2)
+- `cli/commands.ts` (2)
+- Posibles más en otros archivos
 
 **Solución:**
-Crear tipos específicos:
-
-```typescript
-// Ejemplo para sql-executor.tool.ts
-interface SqlResult<T> {
-  exito: boolean;
-  datos?: T[];
-  total_filas?: number;
-  error?: string;
-  sql_ejecutado?: string;
-  sql_intentado?: string;
-}
-
-// Usar:
-const [filas] = await pool.query<RowDataPacket[]>(sqlFinal);
-```
+Continuar reemplazando `any` por tipos específicos o `unknown` + type guards.
 
 **Prioridad:** MEDIA  
-**Esfuerzo:** ALTO (refactor en todos los archivos)
+**Esfuerzo:** MEDIO-ALTO (en progreso)
 
 ---
 
