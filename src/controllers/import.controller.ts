@@ -47,6 +47,17 @@ export async function importarDatos(
         return;
     }
 
+    // SEC-11: Limitar tamaño del payload para prevenir DoS
+    const pesoBytes = Buffer.byteLength(JSON.stringify(datos), 'utf-8');
+    const MAX_PESO_MB = 10;
+    if (pesoBytes > MAX_PESO_MB * 1024 * 1024) {
+        res.status(413).json({
+            exitoso: false,
+            mensaje: `El archivo supera el tamaño máximo permitido de ${MAX_PESO_MB}MB.`
+        });
+        return;
+    }
+
     if (destino === 'bd' && !tabla) {
         res.status(400).json({
             exitoso: false,

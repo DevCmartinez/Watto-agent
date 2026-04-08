@@ -23,9 +23,10 @@ export class ApiError extends Error {
         this.name = 'ApiError';
     }
 }
+
 // Funcion base para todas las peticiones
 // SEC-01: Las cookies HttpOnly se envian automaticamente por el navegador
-// No es necesario agregar手动mente el token JWT.
+// No es necesario agregar manualmente el token JWT.
 async function request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -40,11 +41,11 @@ async function request<T>(
         headers,
         credentials: 'include', // Asegura que las cookies se envien en cross-site requests
     });
-    // Si la respuesta es 401 y no es un login/registro, cerrar sesión automáticamente
+    // Si la respuesta es 401 y no es un login/registro, cerrar sesion automaticamente
     if (response.status === 401 && !['/auth/login', '/auth/registro'].includes(endpoint)) {
         useAuthStore.getState().cerrarSesion();
         window.location.href = '/login';
-        throw new ApiError(401, 'Sesión expirada. Por favor inicia sesión de nuevo.');
+        throw new ApiError(401, 'Sesion expirada. Por favor inicia sesion de nuevo.');
     }
     const data = await response.json();
     if (!response.ok) {
@@ -52,21 +53,16 @@ async function request<T>(
     }
     return data;
 }
-// ■■ Metodos HTTP convenientes ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+
+// Metodos HTTP convenientes
 export const api = {
     get: <T>(url: string) => request<T>(url),
     post: <T>(url: string, body: any) => request<T>(url, { method: 'POST', body: JSON.stringify(body) }),
     put: <T>(url: string, body: any) => request<T>(url, { method: 'PUT', body: JSON.stringify(body) }),
     delete: <T>(url: string) => request<T>(url, { method: 'DELETE' }),
 };
-// ■■ Tipos de respuesta del backend ■■■■■■■■■■■■■■■■■■■■■■■
-export interface LoginResponse {
-    exitoso: boolean;
-    data: {
-        usuario: { id: number; nombre: string; email: string; rol: 'admin' | 'usuario' };
-        token: string;
-    };
-}
+
+// Tipos de respuesta del backend
 export interface AgentResponse {
     exitoso: boolean;
     data: {
