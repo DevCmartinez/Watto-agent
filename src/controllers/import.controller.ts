@@ -114,7 +114,7 @@ export async function importarDatos(
 
 
 // Importar filas en una tabla de MySQL
-// Aplica el mapeo de columnas y ejecuta INSERT fila por fila
+// Usa batch inserts para rendimiento óptimo
 async function importarEnBD(
     tabla: string,
     mapeo: Record<string, string>,
@@ -128,37 +128,35 @@ async function importarEnBD(
     };
 
     // Obtener los campos del destino (columnas de la BD)
-    // a partir del mapeo: { "col_archivo": "campo_bd" }
-    const camposBD = Object.values(mapeo);
+    const camposBD = Object.keys(mapeo);
 
     // Procesar en lotes de 50 filas para no saturar la conexion
     const LOTE = 50;
     for (let i = 0; i < datos.length; i += LOTE) {
         const lote = datos.slice(i, i + LOTE);
 
-        // Procesar cada fila del lote
-        for (const fila of lote) {
-            try {
-                // Aplicar el mapeo: extraer solo los valores que corresponden
-                // a los campos del destino segun el mapeo definido
-                const valoresBD: Record<string, string> = {};
-                for (const [colArchivo, campoBD] of Object.entries(mapeo)) {
-                    valoresBD[campoBD] = fila[colArchivo] ?? '';
-                }
+        try {
+            // Construir el batch insert: INSERT INTO tabla (col1, col2) VALUES (?, ?), (?, ?), ...
+            const columnas = camposBD.join(', ');
+            const placeholdersPorFila = camposBD.map(() => '?').join(', ');
+            const placeholders = lote.map(() => `(${placeholdersPorFila})`).join(', ');
 
-                // Construir el INSERT dinamicamente (tabla ya validada por whitelist)
-                const columnas = Object.keys(valoresBD).join(', ');
-                const placeholders = Object.keys(valoresBD).map(() => '?').join(', ');
-                const valores = Object.values(valoresBD);
-                const sql = `INSERT INTO ${tabla} (${columnas}) VALUES (${placeholders})`;
-                await pool.query(sql, valores);
-                resultado.insertados++;
+            // Flatten: [fila1_val1, fila1_val2, fila2_val1, fila2_val2, ...]
+            const valores = lote.flatMap((fila) =>
+                camposBD.map((campoBD) => {
+                    const colArchivo = Object.keys(mapeo).find((k) => mapeo[k] === campoBD) || '';
+                    return fila[colArchivo] ?? '';
+                })
+            );
 
-            } catch (e: unknown) {
-                const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
-                resultado.errores++;
-                resultado.detalles.push(`Fila ${i + lote.indexOf(fila) + 2}: ${errorMessage}`);
-            }
+            const sql = `INSERT INTO ${tabla} (${columnas}) VALUES ${placeholders}`;
+            await pool.query(sql, valores);
+            resultado.insertados += lote.length;
+
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
+            resultado.errores += lote.length;
+            resultado.detalles.push(`Lote ${i / LOTE + 1}: ${errorMessage}`);
         }
     }
     return resultado;
