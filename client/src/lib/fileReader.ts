@@ -71,8 +71,15 @@ export async function leerArchivo(
         )
     );
 
+    // SEC-SANITIZE: Limpiar nombre de archivo (previene path traversal, caracteres peligrosos)
+    const nombreOriginal = file.name;
+    const nombreSeguro = nombreOriginal
+      .replace(/[<>:"/\\|?*]/g, '_')  // Reemplazar caracteres no permitidos en nombres de archivo
+      .replace(/\.\./g, '_')          // Prevenir path traversal
+      .slice(0, 100);                 // Límite de longitud
+
     return {
-        nombre: file.name,
+        nombre: nombreSeguro,
         extension,
         totalFilas: filasDatos.length,
         encabezados,

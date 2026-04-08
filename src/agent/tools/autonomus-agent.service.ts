@@ -94,6 +94,10 @@ export async function inicializarAgente(): Promise<void> {
 
   if (listo) return;
   console.log(`[${env.agent.name}] Estoy iniciando en modo: ${env.agent.mode.toUpperCase()}`);
+
+  // SEC-SSRF: Validar configuraciones de URLs antes de usar
+  validarConfiguracionUrls();
+
   const cached = leerCache();
   if (cached) {
     systemPrompt = cached;
@@ -281,6 +285,64 @@ export async function consultarAgenteStreaming(
   } finally {
     console.error = originalConsoleError;
     res.end();
+  }
+}
+
+/**
+ * SEC-SSRF: Valida las URLs configuradas en .env al arranque
+ * Bloquea: schemes peligrosos, IPs de metadata cloud, localhost en prod
+ */
+function validarConfiguracionUrls(): void {
+  const baseUrl = env.agent.api.baseUrl;
+  const openApiUrl = env.agent.api.openApiUrl;
+  const urls = [baseUrl, openApiUrl].filter(Boolean) as string[];
+
+  const IPs_METADATA = [
+    '169.254.169.254', // AWS metadata
+    'metadata.google.internal', // GCP metadata
+    'metadata.internal', // Azure metadata
+  ];
+
+  for (const urlStr of urls) {
+    try {
+      const parsed = new URL(urlStr);
+
+      // 1. Solo schemes http/https
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        throw new Error(`Protocolo '${parsed.protocol}' no permitido`);
+      }
+
+      // 2. Bloquear IPs de metadata cloud (independientemente del entorno)
+      if (IPs_METADATA.includes(parsed.hostname)) {
+        throw new Error(`Acceso a '${parsed.hostname}' bloqueado por seguridad (SSRF)`);
+      }
+
+      // 3. En producción: bloquear localhost e IPs privadas
+      if (process.env.NODE_ENV === 'production') {
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+          throw new Error('localhost no permitido en producción');
+        }
+        // Bloq IPs privadas RFC1918: 10.x, 172.16-31.x, 192.168.x
+        if (/^10\./.test(parsed.hostname) ||
+            /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(parsed.hostname) ||
+            /^192\.168\./.test(parsed.hostname)) {
+          throw new Error('IPs privadas no permitidas en producción');
+        }
+      }
+
+      console.log(`[STARTUP] URL validada OK: ${urlStr}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'URL inválida';
+      console.error(`[STARTUP] Configuración insegura bloqueada: ${urlStr} — ${msg}`);
+
+      // En producción: fallar startup (no arrancar el servidor)
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`Configuración insegura en variable de entorno: ${msg}`);
+      }
+
+      // En desarrollo: solo warning (para no bloquear el workflow)
+      console.warn('⚠️  Advertencia: Esta configuración sería bloqueada en producción');
+    }
   }
 }
 

@@ -34,19 +34,23 @@ export const apiExecutorTool = tool({
    * Lógica de ejecución: Construcción de URL, Inyección de Auth y Fetch con Timeout.
    */
   execute: async ({ ruta, parametrosQuery, descripcion }) => {
-    console.log(`[Agente -> API Ext] Solicitando: ${descripcion}`);
-    
-    // 1. Obtención de configuración base
+    // 1. Obtención de configuración base y validación
     const baseUrl = env.agent.api.baseUrl;
     if (!baseUrl) {
       return { exito: false, error: "La variable AGENT_API_BASE_URL no está configurada en el servidor." };
     }
 
-    // 2. Construcción robusta de la URL final
-    let url = `${baseUrl.replace(/\/$/, "")}/${ruta.replace(/^\//, "")}`;
+    // 2. Construcción de URL para logging y ejecución
+    let urlConstruida = `${baseUrl.replace(/\/$/, "")}/${ruta.replace(/^\//, "")}`;
     if (parametrosQuery && Object.keys(parametrosQuery).length > 0) {
-      url += "?" + new URLSearchParams(parametrosQuery).toString();
+      urlConstruida += "?" + new URLSearchParams(parametrosQuery).toString();
     }
+
+    // SEC-AUDIT: Log de auditoría para cada llamada externa
+    console.log(`[AUDIT] Agente → API Externa | URL: ${urlConstruida} | Desc: ${descripcion}`);
+
+    // 3. URL ya construida arriba para logging (reutilizar)
+    const url = urlConstruida;
 
     // 3. Configuración dinámica de Headers de Autenticación
     const headers: Record<string, string> = {
@@ -69,7 +73,7 @@ export const apiExecutorTool = tool({
     try {
       // 4. Mecanismo de AbortController para evitar cuelgues del hilo principal
       const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 15000); // 15 segundos máximo por petición
+      const timeout = setTimeout(() => ctrl.abort(), 8000); // 8 segundos máximo (reducido de 15s)
 
       const resp = await fetch(url, {
         method: "GET",
@@ -100,7 +104,7 @@ export const apiExecutorTool = tool({
       const error = e instanceof Error ? e : new Error(String(e));
       return {
         exito: false,
-        error: error.name === "AbortError" ? "Tiempo de espera agotado (15s)" : `Fallo de conexión: ${error.message}`,
+        error: error.name === "AbortError" ? "Tiempo de espera agotado (8s)" : `Fallo de conexión: ${error.message}`,
       };
     }
   },
