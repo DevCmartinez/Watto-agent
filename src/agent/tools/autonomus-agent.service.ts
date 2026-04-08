@@ -19,6 +19,7 @@ import { apiExecutorTool } from "../../agent/tools/api-executor.tool";
 import { usuarioExecutorTool } from "../../agent/tools/usuario-executor.tool";
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * @origin [src/agent/tools/autonomus-agent.service.ts]
@@ -59,7 +60,9 @@ function getTools(injectedTools?: AgentTools): Record<string, Tool> {
   return tools;
 }
 
-const CACHE_PATH = path.join(process.cwd(), '.schema-cache.json');
+// SEC-08: Cache dentro del proyecto con nombre obfuscado basado en hash
+// No predecible desde fuera, se limpia automáticamente en cada deploy/restart
+const CACHE_PATH = path.join(process.cwd(), '.cache', `.watto-${crypto.createHash('sha256').update(env.agent.mode).digest('hex').slice(0, 12)}.bin`);
 
 interface SchemaCache {
   systemPrompt: string;
@@ -95,6 +98,9 @@ async function guardarCache(prompt: string): Promise<void> {
       generadoEn: new Date().toISOString(),
       modo: env.agent.mode,
     };
+    // Asegurar que el directorio .cache existe
+    const cacheDir = path.dirname(CACHE_PATH);
+    await fs.promises.mkdir(cacheDir, { recursive: true });
     await fs.promises.writeFile(CACHE_PATH, JSON.stringify(cache), 'utf-8');
   } catch {
     // Si falla el cache no es critico

@@ -1,5 +1,6 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import DOMPurify from 'dompurify';
 import { clsx } from 'clsx';
 import { type Mensaje } from '@/types';
 
@@ -39,13 +40,13 @@ export function MessageBubble({ mensaje }: Props) {
                     // Mensajes del usuario: texto plano (el usuario no escribe markdown)
                     <p className="whitespace-pre-wrap">{mensaje.contenido}</p>
                 ) : (
-                    // Mensajes del agente: renderizar markdown completo
+                    // Mensajes del agente: renderizar markdown con sanitización
                     <div className="markdown-content">
                         <ReactMarkdown
                             remarkPlugins={[remarkGfm]}
                             components={markdownComponents}
                         >
-                            {mensaje.contenido}
+                            {DOMPurify.sanitize(mensaje.contenido)}
                         </ReactMarkdown>
                     </div>
                 )}
