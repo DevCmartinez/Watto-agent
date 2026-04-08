@@ -73,7 +73,12 @@ export async function exportarArchivo(
         // Obtener los encabezados de la primera fila
         const encabezados = Object.keys(datos[0] as DataRow);
         // Generar el archivo segun el formato solicitado
-        const nombreArchivo = titulo.replace(/[^a-z0-9\-_]/gi, '-').toLowerCase();
+        // Sanitizar nombre de archivo: remover caracteres peligrosos para FS y longitudes excesivas
+        const nombreArchivo = titulo
+            .replace(/[<>:"|?*\x00-\x1f]/g, '_')  // Caracteres de control y reserved de Windows
+            .replace(/[^a-z0-9\-_.]/gi, '-')      // Solo alfanumericos, guiones, guiones bajos y puntos
+            .slice(0, 200)                         // Limitar longitud maxima
+            .replace(/\.+/g, '.');                  // Prevenir puntos multiples o finales
         if (formato === 'xlsx') {
             await generarExcel(res, datos, encabezados, nombreArchivo);
         } else if (formato === 'csv') {
