@@ -1,4 +1,4 @@
-import { generateText, streamText, ModelMessage, stepCountIs } from "ai";
+import { generateText, streamText, ModelMessage, stepCountIs, Tool } from "ai";
 import { Response } from "express";
 
 // Interfaz mínima para respuestas de streaming (compatible con Express Response y Fakes)
@@ -30,8 +30,24 @@ let systemPrompt: string | null = null;
 
 export let listo: boolean = false;
 
-function getTools(): Record<string, any> {
-  const tools: Record<string, any> = {};
+/**
+ * Interfaz para herramientas del agente (permite IoC y testing con mocks).
+ * Compatible con Record<string, Tool> del SDK de Vercel AI.
+ */
+export type AgentTools = Record<string, Tool>;
+
+/**
+ * Obtiene las herramientas activas según el modo configurado.
+ * Soporta inyección de herramientas para testing o extensiones.
+ */
+function getTools(injectedTools?: AgentTools): Record<string, Tool> {
+  // Si se injectaron tools, usar esas (para testing o extensiones)
+  if (injectedTools && Object.keys(injectedTools).length > 0) {
+    return injectedTools;
+  }
+
+  // Tools por defecto según el modo
+  const tools: Record<string, Tool> = {};
   const modo = env.agent.mode;
   if (modo === "db" || modo === "both") {
     tools.ejecutarSQL = sqlExecutorTool;
@@ -132,14 +148,16 @@ function verificar(): void {
 export async function consultarAgente(
   pregunta: string,
   historial: ModelMessage[] = [],
+  injectedTools?: AgentTools,
 ): Promise<{ texto: string; tokens: number; tiempoMs: number }> {
   verificar();
   const inicio = Date.now();
+  const tools = getTools(injectedTools);
   const resultado = await generateText({
     model: aiModel,
     system: systemPrompt!,
     messages: [...historial, { role: "user", content: pregunta }],
-    tools: getTools(),
+    tools,
     stopWhen: stepCountIs(10),
     maxOutputTokens: AI_CONFIG.maxTokens,
     temperature: AI_CONFIG.temperature,
@@ -165,8 +183,10 @@ export async function consultarAgenteStreaming(
   pregunta: string,
   res: StreamingResponse,
   historial: ModelMessage[] = [],
+  injectedTools?: AgentTools,
 ): Promise<void> {
   verificar();
+  const tools = getTools(injectedTools);
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -180,7 +200,7 @@ export async function consultarAgenteStreaming(
       model: aiModel,
       system: systemPrompt! + "\n\nNOTA: Si los datos son muy extensos, sugiere opcionalmente la exportación a Excel/PDF para mejor visualización.",
       messages: [...historial, { role: "user", content: pregunta }],
-      tools: getTools(),
+      tools,
       stopWhen: stepCountIs(10),
       maxOutputTokens: 2048,
       temperature: 0.2,
