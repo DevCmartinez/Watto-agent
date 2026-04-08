@@ -4,7 +4,7 @@
  * Utiliza 'express-validator' para asegurar la integridad de la información antes de llegar a los controladores.
  */
 import { Request, Response, NextFunction } from "express";
-import { body, validationResult, ValidationChain } from "express-validator";
+import { body, validationResult, ValidationChain, ValidationError } from "express-validator";
 
 /**
  * Función genérica para ejecutar una serie de validaciones y responder en caso de error.
@@ -20,16 +20,20 @@ export function validate(validations: ValidationChain[]) {
 
     // 2. Extraer los resultados detallados
     const errors = validationResult(req);
-    
+
     // 3. Si hay fallos, responder con HTTP 422 (Entidad no procesable)
     if (!errors.isEmpty()) {
       res.status(422).json({
         exitoso: false,
         mensaje: "Error de validación en los datos de entrada.",
-        errores: errors.array().map((e) => ({
-          campo: (e as any).path,
-          mensaje: e.msg,
-        })),
+        errores: errors.array().map((e) => {
+          // Type-safe extraction of field name (path or param)
+          const error = e as { path?: string; param?: string; msg: string };
+          return {
+            campo: error.path || error.param || 'campo',
+            mensaje: error.msg,
+          };
+        }),
       });
       return;
     }

@@ -1,7 +1,8 @@
 import pool from "../../config/database";
 import { env } from "../../config/env";
+import { RowDataPacket } from "mysql2";
 
-//Interfaces para el esquema de la base de datos
+// Interfaces para el esquema de la base de datos
 export interface EsquemaTabla {
   nombre: string;
   columnas: EsquemaColumna[];
@@ -20,16 +21,35 @@ export interface RelacionForanea {
   columnaReferencia: string;
 }
 
-//Cache para evitar consultas repetidas
+// Cache para evitar consultas repetidas
 let cache: EsquemaTabla[] | null = null;
 
-//Función para descubrir el esquema de la base de datos
+// Tipos para resultados de MySQL
+interface ShowTableRow {
+  [key: string]: string; // CLAVE: nombre de la tabla (puede ser 'Tables_in_db' o similar)
+}
+interface DescribeRow extends RowDataPacket {
+  Field: string;
+  Type: string;
+  Null: string;
+  Key: string;
+  Extra: string;
+}
+interface ForeignKeyRow extends RowDataPacket {
+  columna: string;
+  tablaReferencia: string;
+  columnaReferencia: string;
+}
+
+// Función para descubrir el esquema de la base de datos
 export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
   if (cache) return cache;
   console.log(`[${env.agent.name}] Estoy leyendo el esquema de MySQL...`);
-  const [tablas] = await pool.query<any>("SHOW TABLES");
-  const claveTabla = Object.keys(tablas[0])[0];
-  let nombres: string[] = tablas.map((t: any) => t[claveTabla]);
+
+  // Obtener lista de tablas
+  const [tablas] = await pool.query<RowDataPacket[]>("SHOW TABLES");
+  const claveTabla = Object.keys(tablas[0] || {})[0];
+  let nombres: string[] = tablas.map((t: ShowTableRow) => t[claveTabla] || "");
 
   // Filtrar tablas excluidas desde .env
   const excluidas = env.agent.db.excludeTables;
@@ -38,18 +58,21 @@ export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
   }
   console.log(`[${env.agent.name}] Encontre las tablas => [${nombres.join(", ")}]`);
 
-  //Crear un array de esquemas
+  // Crear un array de esquemas
   const esquemas: EsquemaTabla[] = [];
   for (const nombre of nombres) {
-    const [cols] = await pool.query<any>(`DESCRIBE ${nombre}`);
-    const columnas: EsquemaColumna[] = cols.map((c: any) => ({
+    // Obtener columnas con DESCRIBE
+    const [cols] = await pool.query<DescribeRow[]>(`DESCRIBE ${nombre}`);
+    const columnas: EsquemaColumna[] = cols.map((c) => ({
       nombre: c.Field,
       tipo: c.Type,
       nulo: c.Null === "YES",
       clavePrimaria: c.Key === "PRI",
       extra: c.Extra,
     }));
-    const [fks] = await pool.query<any>(
+
+    // Obtener relaciones foráneas
+    const [fks] = await pool.query<ForeignKeyRow[]>(
       `
 SELECT COLUMN_NAME AS columna,
 REFERENCED_TABLE_NAME AS tablaReferencia,
@@ -61,10 +84,11 @@ TABLE_NAME = ? AND
 REFERENCED_TABLE_NAME IS NOT NULL`,
       [nombre],
     );
+
     esquemas.push({
       nombre,
       columnas,
-      relacionesForaneas: fks.map((f: any) => ({
+      relacionesForaneas: fks.map((f) => ({
         columna: f.columna,
         tablaReferencia: f.tablaReferencia,
         columnaReferencia: f.columnaReferencia,
@@ -75,6 +99,7 @@ REFERENCED_TABLE_NAME IS NOT NULL`,
   console.log(`[${env.agent.name}] ${esquemas.length} tabla(s) procesada(s)`);
   return esquemas;
 }
+
 export function invalidarCache(): void {
   cache = null;
 }

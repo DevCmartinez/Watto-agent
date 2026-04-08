@@ -1,8 +1,9 @@
 import { Response } from "express";
-// Respuesta exitosa estandarizada
-export function sendSuccess(
+
+// Tipo genérico para respuestas exitosas
+export function sendSuccess<T = unknown>(
   res: Response,
-  data: any,
+  data: T,
   mensaje: string = "Operacion exitosa",
   status: number = 200,
 ): void {
@@ -10,8 +11,9 @@ export function sendSuccess(
     exitoso: true,
     mensaje,
     data,
-  });
+  } as { exitoso: true; mensaje: string; data: T });
 }
+
 // Respuesta de error estandarizada
 export function sendError(
   res: Response,
@@ -21,5 +23,5 @@ export function sendError(
   res.status(status).json({
     exitoso: false,
     mensaje,
-  });
+  } as { exitoso: false; mensaje: string });
 }

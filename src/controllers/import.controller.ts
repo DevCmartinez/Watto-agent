@@ -27,7 +27,7 @@ async function tablasDisponibles(): Promise<string[]> {
     const [rows] = await pool.query<RowDataPacket[]>(
         'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()'
     );
-    return rows.map((r: any) => (r.TABLE_NAME || r.table_name) as string);
+    return rows.map((r) => (r.TABLE_NAME || r.table_name) as string);
 }
 
 // POST /api/import
@@ -101,12 +101,13 @@ export async function importarDatos(
             data: resultado,
         });
 
-    } catch (e: any) {
-        console.error('[Import] Error:', e.message);
+    } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
+        console.error('[Import] Error:', errorMessage);
         res.status(500).json({
             exitoso: false,
             mensaje: 'Error durante la importacion',
-            detalle: e.message,
+            detalle: errorMessage,
         });
     }
 }
@@ -153,9 +154,10 @@ async function importarEnBD(
                 await pool.query(sql, valores);
                 resultado.insertados++;
 
-            } catch (e: any) {
+            } catch (e: unknown) {
+                const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
                 resultado.errores++;
-                resultado.detalles.push(`Fila ${i + lote.indexOf(fila) + 2}: ${e.message}`);
+                resultado.detalles.push(`Fila ${i + lote.indexOf(fila) + 2}: ${errorMessage}`);
             }
         }
     }

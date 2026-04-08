@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import * as XLSX from 'xlsx';
+import { RowDataPacket } from 'mysql2';
 import pool from '../config/database';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+// Tipo para filas de datos (objetos con claves dinámicas)
+type DataRow = Record<string, unknown>;
 
 // Palabras SQL que NUNCA se permiten en exportacion
 // El agente solo puede leer datos, nunca modificar
@@ -59,15 +63,15 @@ export async function exportarArchivo(
     try {
         // Ejecutar el SQL contra MySQL
         // El LIMIT viene en el SQL que genero el agente
-        const [filas] = await pool.query<any[]>(sql);
-        const datos = Array.isArray(filas) ? filas : [filas];
+        const [filas] = await pool.query<RowDataPacket[]>(sql);
+        const datos: DataRow[] = Array.isArray(filas) ? filas : [filas];
         // Si no hay datos, informar al usuario
         if (datos.length === 0) {
             res.status(404).json({ exitoso: false, mensaje: 'La consulta no retorno datos' });
             return;
         }
         // Obtener los encabezados de la primera fila
-        const encabezados = Object.keys(datos[0]);
+        const encabezados = Object.keys(datos[0] as DataRow);
         // Generar el archivo segun el formato solicitado
         const nombreArchivo = titulo.replace(/[^a-z0-9\-_]/gi, '-').toLowerCase();
         if (formato === 'xlsx') {
@@ -77,12 +81,13 @@ export async function exportarArchivo(
         } else if (formato === 'pdf') {
             await generarPDF(res, datos, encabezados, nombreArchivo, titulo);
         }
-    } catch (e: any) {
-        console.error('[Export] Error:', e.message);
+    } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : 'Error desconocido';
+        console.error('[Export] Error:', errorMessage);
         res.status(500).json({
             exitoso: false,
             mensaje: 'Error al ejecutar la consulta o generar el archivo',
-            detalle: e.message,
+            detalle: errorMessage,
         });
     }
 }
@@ -90,14 +95,14 @@ export async function exportarArchivo(
 // Genera y descarga un archivo Excel (.xlsx)
 async function generarExcel(
     res: Response,
-    datos: any[],
+    datos: DataRow[],
     encabezados: string[],
     nombreArchivo: string
 ): Promise<void> {
     // Convertir los datos a formato de hoja de calculo
     // aoa = array of arrays: [[encabezado1, encabezado2], [dato1, dato2], ...]
-    const filasDatos = datos.map(fila =>
-        encabezados.map(col => fila[col] ?? '')
+    const filasDatos = datos.map((fila: DataRow) =>
+        encabezados.map((col) => (fila[col] ?? ''))
     );
     const hojaData = [encabezados, ...filasDatos];
     const hoja = XLSX.utils.aoa_to_sheet(hojaData);
@@ -130,7 +135,7 @@ async function generarExcel(
 // Genera y descarga un archivo CSV
 function generarCSV(
     res: Response,
-    datos: any[],
+    datos: DataRow[],
     encabezados: string[],
     nombreArchivo: string
 ): void {
@@ -138,8 +143,8 @@ function generarCSV(
     // Primera linea: encabezados separados por coma
     const lineas: string[] = [encabezados.join(',')];
     // Siguientes lineas: datos, escapando comas y comillas
-    datos.forEach(fila => {
-        const valores = encabezados.map(col => {
+    datos.forEach((fila: DataRow) => {
+        const valores = encabezados.map((col) => {
             const valor = String(fila[col] ?? '');
             // Si el valor contiene coma o comilla, envolverlo en comillas dobles
             return valor.includes(',') || valor.includes('"') ? `"${valor.replace(/"/g, '""')}"` : valor;
@@ -157,7 +162,7 @@ function generarCSV(
 // Genera y descarga un archivo PDF con los datos en tabla
 async function generarPDF(
     res: Response,
-    datos: any[],
+    datos: DataRow[],
     encabezados: string[],
     nombreArchivo: string,
     titulo: string
@@ -167,7 +172,7 @@ async function generarPDF(
     const numCols = encabezados.length;
     const format = numCols > 12 ? 'a3' : 'a4';
     const orientation = 'landscape';
-    
+
     // Generar documento
     const doc = new jsPDF({ orientation, unit: 'mm', format });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -194,8 +199,8 @@ async function generarPDF(
     const fontSize = Math.max(9 - (numCols > 8 ? (numCols - 8) * 0.4 : 0), 5.5);
 
     // Mapeo de datos
-    const filasDatos = datos.map(fila =>
-        encabezados.map(col => {
+    const filasDatos = datos.map((fila: DataRow) =>
+        encabezados.map((col) => {
             const val = fila[col];
             if (val === null || val === undefined) return '';
             // Si es fecha, formatear un poco

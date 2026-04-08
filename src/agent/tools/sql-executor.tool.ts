@@ -9,6 +9,7 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
+import { RowDataPacket } from "mysql2";
 import pool from "../../config/database";
 import { env } from "../../config/env";
 
@@ -125,8 +126,8 @@ export const sqlExecutorTool = tool({
 
     try {
       // Ejecución real en el pool de conexiones de MySQL
-      const [filas] = await pool.query<any>(sqlFinal);
-      const datos = Array.isArray(filas) ? filas : [filas];
+      const [filas] = await pool.query<RowDataPacket[]>(sqlFinal);
+      const datos: unknown[] = Array.isArray(filas) ? filas : [filas];
 
       return {
         exito: true,
@@ -134,11 +135,12 @@ export const sqlExecutorTool = tool({
         datos,
         sql_ejecutado: sqlFinal,
       };
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Captura de errores de sintaxis o de base de datos
+      const error = e instanceof Error ? e.message : "Error desconocido";
       return {
         exito: false,
-        error: `Error de base de datos: ${e.message}`,
+        error: `Error de base de datos: ${error}`,
         sql_intentado: sqlFinal,
       };
     }

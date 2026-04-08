@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { RowDataPacket } from "mysql2";
 import pool from "../../config/database";
 import { hashear } from "../../utils/hash.util";
 
@@ -34,7 +35,7 @@ export const usuarioExecutorTool = tool({
                     return { exito: false, error: "nombre, email y password son requeridos para crear un usuario." };
                 }
                 const hash = await hashear(datos.password);
-                await pool.query<any>(
+                await pool.query<RowDataPacket[]>(
                     "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)",
                     [datos.nombre, datos.email, hash, datos.rol || "usuario"]
                 );
@@ -44,27 +45,28 @@ export const usuarioExecutorTool = tool({
             if (accion === "actualizar") {
                 if (!datos.id) return { exito: false, error: "ID requerido para actualizar." };
                 const campos: string[] = [];
-                const valores: any[] = [];
+                const valores: unknown[] = [];
                 if (datos.nombre) { campos.push("nombre = ?"); valores.push(datos.nombre); }
                 if (datos.email) { campos.push("email = ?"); valores.push(datos.email); }
                 if (datos.password) { campos.push("password = ?"); valores.push(await hashear(datos.password)); }
                 if (datos.rol) { campos.push("rol = ?"); valores.push(datos.rol); }
                 if (campos.length === 0) return { exito: false, error: "No hay campos para actualizar." };
                 valores.push(datos.id);
-                await pool.query<any>(`UPDATE usuarios SET ${campos.join(", ")} WHERE id = ?`, valores);
+                await pool.query<RowDataPacket[]>(`UPDATE usuarios SET ${campos.join(", ")} WHERE id = ?`, valores);
                 return { exito: true, mensaje: `Usuario ID ${datos.id} actualizado correctamente.` };
             }
 
             if (accion === "desactivar") {
                 if (!datos.id) return { exito: false, error: "ID requerido para desactivar." };
-                await pool.query<any>("UPDATE usuarios SET activo = 0 WHERE id = ?", [datos.id]);
+                await pool.query<RowDataPacket[]>("UPDATE usuarios SET activo = 0 WHERE id = ?", [datos.id]);
                 return { exito: true, mensaje: `Usuario ID ${datos.id} desactivado.` };
             }
 
             return { exito: false, error: "Accion no reconocida." };
 
-        } catch (e: any) {
-            return { exito: false, error: e.message };
+        } catch (e: unknown) {
+            const error = e instanceof Error ? e.message : "Error desconocido";
+            return { exito: false, error };
         }
     },
 });

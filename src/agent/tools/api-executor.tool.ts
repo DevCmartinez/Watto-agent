@@ -89,17 +89,18 @@ export const apiExecutorTool = tool({
       }
 
       // 6. Retorno de datos crudos procesados por el Agente
-      const datos: any = await resp.json();
-      const total = Array.isArray(datos) ? datos.length : (datos.total || "N/A");
-      
+      const datos = await resp.json(); // tipo inferido como unknown
+      const total = Array.isArray(datos) ? datos.length : ((datos as { total?: number })?.total ?? "N/A");
+
       console.log(`[API Ext -> Agente] Éxito. Items recuperados: ${total}`);
       return { exito: true, datos, total_items: total };
 
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Manejo de timeouts y fallos de red
+      const error = e instanceof Error ? e : new Error(String(e));
       return {
         exito: false,
-        error: e.name === "AbortError" ? "Tiempo de espera agotado (15s)" : `Fallo de conexión: ${e.message}`,
+        error: error.name === "AbortError" ? "Tiempo de espera agotado (15s)" : `Fallo de conexión: ${error.message}`,
       };
     }
   },
