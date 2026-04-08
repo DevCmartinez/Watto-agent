@@ -50,7 +50,7 @@ function setAuthCookie(res: Response, token: string): void {
   res.cookie('token', token, {
     httpOnly: true,
     secure: esProduccion, // Solo enviar via HTTPS en producción
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const, // 'lax' permite navegación normal, bloquea CSRF en AJAX
     maxAge: maxAgeMs,
     path: '/',
   });
@@ -63,7 +63,7 @@ function clearAuthCookie(res: Response): void {
   res.clearCookie('token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
     path: '/',
   });
 }

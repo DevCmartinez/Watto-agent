@@ -47,7 +47,9 @@ export const apiExecutorTool = tool({
     }
 
     // SEC-AUDIT: Log de auditoría para cada llamada externa
-    console.log(`[AUDIT] Agente → API Externa | URL: ${urlConstruida} | Desc: ${descripcion}`);
+    // Solo loguear el pathname para evitar filtrar tokens en la URL
+    const urlObj = new URL(urlConstruida);
+    console.log(`[AUDIT] Agente → API Externa | Path: ${urlObj.pathname}${urlObj.search} | Desc: ${descripcion}`);
 
     // 3. URL ya construida arriba para logging (reutilizar)
     const url = urlConstruida;
