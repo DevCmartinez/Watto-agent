@@ -2,7 +2,7 @@
  * @origin [src/agent/tools/sql-executor.tool.ts]
  * @calledBy El Agente IA en [autonomus-agent.service.ts] mediante el SDK de Vercel AI.
  * @description Herramienta crítica que permite al agente interactuar con la base de datos MySQL.
- * Incluye un sistema de seguridad de tres capas: 
+ * Incluye un sistema de seguridad de tres capas:
  * 1. Bloqueo de comandos destructivos.
  * 2. Confirmación obligatoria para escrituras.
  * 3. Delegación de tablas sensibles (usuarios).
@@ -10,8 +10,12 @@
 import { tool } from "ai";
 import { z } from "zod";
 import { RowDataPacket } from "mysql2";
+import { Parser } from "node-sql-parser";
 import pool from "../../config/database";
 import { env } from "../../config/env";
+
+// Instancia compartida del parser MySQL (性能和 memory)
+const parser = new Parser();
 
 /**
  * Operaciones de estructura DDL que están estrictamente prohibidas por seguridad.
@@ -96,12 +100,38 @@ export const sqlExecutorTool = tool({
       }
     }
 
+    // CAPA 3: Validación estructural con parser SQL (previene ofuscación)
+    // Se valida el SQL original antes de cualquier modificación
+    try {
+      const ast = parser.astify(sql.trim(), { database: "MySQL" });
+      const tipoConsulta = Array.isArray(ast) ? ast[0]?.type?.toLowerCase() : ast?.type?.toLowerCase();
+
+      // Verificar que el tipo de operación declarada coincide con el SQL real
+      const operacionesEsperadas: string[] = [];
+      if (sqlLower.includes("insert")) operacionesEsperadas.push("insert");
+      if (sqlLower.includes("update")) operacionesEsperadas.push("update");
+      if (sqlLower.includes("delete")) operacionesEsperadas.push("delete");
+      if (sqlLower.startsWith("select")) operacionesEsperadas.push("select");
+
+      if (operacionesEsperadas.length > 0 && tipoConsulta && !operacionesEsperadas.includes(tipoConsulta)) {
+        return {
+          exito: false,
+          error: `Seguridad: El tipo de consulta declarada (${operacionesEsperadas.join("/")}) no coincide con el SQL detectado (${tipoConsulta}).`,
+        };
+      }
+    } catch (e) {
+      return {
+        exito: false,
+        error: `SQL inválido o no soportado: ${e instanceof Error ? e.message : "Error de parseo"}`,
+      };
+    }
+
     // Identificar si la consulta pretende alterar datos
     const esEscritura = REQUIEREN_CONFIRMACION.some((p) =>
       new RegExp(`\\b${p}\\b`, "i").test(sqlLower),
     );
 
-    // CAPA 3: Solicitud de confirmación humana para INSERT/UPDATE/DELETE
+    // CAPA 4: Solicitud de confirmación humana para INSERT/UPDATE/DELETE
     if (esEscritura && !confirmado) {
       return {
         exito: false,
@@ -109,12 +139,12 @@ export const sqlExecutorTool = tool({
       };
     }
 
-    // CAPA 4: Protección de la tabla de usuarios
+    // CAPA 5: Protección de la tabla de usuarios
     // Se delega a 'usuario-executor.tool' para asegurar el hashing de contraseñas
-    if (esEscritura && sqlLower.includes('usuarios')) {
+    if (esEscritura && sqlLower.includes("usuarios")) {
       return {
         exito: false,
-        error: 'Las modificaciones en la tabla usuarios deben realizarse mediante la herramienta gestionarUsuario.',
+        error: "Las modificaciones en la tabla usuarios deben realizarse mediante la herramienta gestionarUsuario.",
       };
     }
 

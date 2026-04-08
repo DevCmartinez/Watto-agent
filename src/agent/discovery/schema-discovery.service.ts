@@ -62,7 +62,7 @@ export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
   const esquemas: EsquemaTabla[] = [];
   for (const nombre of nombres) {
     // Obtener columnas con DESCRIBE
-    const [cols] = await pool.query<DescribeRow[]>(`DESCRIBE ${nombre}`);
+    const [cols] = await pool.query<DescribeRow[]>(`DESCRIBE \`${nombre}\``);
     const columnas: EsquemaColumna[] = cols.map((c) => ({
       nombre: c.Field,
       tipo: c.Type,
