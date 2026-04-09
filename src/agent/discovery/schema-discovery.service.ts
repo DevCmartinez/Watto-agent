@@ -52,27 +52,7 @@ interface ForeignKeyRow extends RowDataPacket {
   columnaReferencia: string;
 }
 
-// Función para descubrir el esquema de la base de datos
-export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
-  if (cacheValido() && cache.data) {
-    return cache.data;
-  }
-
-  console.log(`[${env.agent.name}] Estoy leyendo el esquema de MySQL...`);
-
-  // Obtener lista de tablas
-  const [tablas] = await pool.query<RowDataPacket[]>("SHOW TABLES");
-  const claveTabla = Object.keys(tablas[0] || {})[0];
-  let nombres: string[] = tablas.map((t: ShowTableRow) => t[claveTabla] || "");
-
-  // Filtrar tablas excluidas desde .env
-  const excluidas = env.agent.db.excludeTables;
-  if (excluidas.length > 0) {
-    nombres = nombres.filter((t) => !excluidas.includes(t));
-  }
-  console.log(`[${env.agent.name}] Encontre las tablas => [${nombres.join(", ")}]`);
-
-  // Procesar una tabla: obtener columnas y foreign keys en paralelo
+// Procesar una tabla: obtener columnas y foreign keys en paralelo
 async function procesarTabla(nombre: string): Promise<EsquemaTabla> {
   const [cols, fks] = await Promise.all([
     pool.query<DescribeRow[]>(`DESCRIBE \`${nombre}\``),
