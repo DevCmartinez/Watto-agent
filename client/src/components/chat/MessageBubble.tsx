@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { clsx } from 'clsx';
+import { useAuthStore } from '@/stores/authStore';
 import { type Mensaje } from '@/types';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 
@@ -11,22 +12,36 @@ const ReactMarkdown = lazy(() => import('react-markdown'));
 interface Props { mensaje: Mensaje; }
 export function MessageBubble({ mensaje }: Props) {
     const esUsuario = mensaje.rol === 'user';
+    const usuario = useAuthStore((state) => state.usuario);
     return (
-        <div className={clsx('flex gap-3 mb-4', esUsuario && 'flex-row-reverse')}>
-            {/* Avatar */}
+        <div className={clsx('flex gap-2.5 mb-6 items-start', esUsuario && 'flex-row-reverse')}>
+            {/* Cápsula de Identidad (Avatar + Nombre) */}
             <div className={clsx(
-                'w-8 h-8 rounded-full flex items-center justify-center',
-                'text-xs font-black shrink-0 shadow-sm transition-transform hover:scale-110',
-                esUsuario
-                    ? 'bg-(--bubble-user) text-(--bubble-user-text)'
-                    : 'bg-primary text-white border border-white/10'
+                'h-8 p-1 rounded-full flex items-center gap-2 shrink-0 border shadow-sm transition-all duration-300',
+                'bg-(--bg-surface) border-(--border)',
+                esUsuario ? 'flex-row-reverse' : 'flex-row'
             )}>
-                {esUsuario ? 'Tu' : 'W'}
+                {/* Círculo con Inicial */}
+                <div className={clsx(
+                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 shadow-sm',
+                    esUsuario 
+                        ? 'bg-(--bubble-user) text-(--bubble-user-text)' 
+                        : 'bg-primary text-white'
+                )}>
+                    {esUsuario ? (usuario?.nombre?.charAt(0) || 'Tú') : 'W'}
+                </div>
+                {/* Nombre - Usando variable reactiva --text para visibilidad garantizada */}
+                <span className={clsx(
+                    'text-[10px] font-bold px-1 whitespace-nowrap transition-colors duration-300',
+                    'text-(--text)'
+                )}>
+                    {esUsuario ? (usuario?.nombre || 'Tú') : 'Watto AI'}
+                </span>
             </div>
 
             {/* Burbuja */}
             <div className={clsx(
-                'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed bubble-shadow',
+                'px-4 py-3 rounded-2xl text-sm leading-relaxed bubble-shadow max-w-[70%]',
                 esUsuario
                     ? 'bg-(--bubble-user) text-(--bubble-user-text) rounded-tr-sm bubble-user-glow'
                     : 'bg-(--bubble-bot) text-(--bubble-bot-text) rounded-tl-sm bubble-bot-glow',

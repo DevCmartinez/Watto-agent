@@ -152,7 +152,7 @@ export function ChatPage() {
                                 Sistema de inteligencia autónoma integral para el análisis de datos masivos y gestión.
                             </p>*/}
                             <p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed pl-6 italic">
-                                ¿Cómo puedo hacer hoy tu día más fácil?
+                                ¿Cómo puedo hacer hoy tu día más fácil? 🚀
                             </p>
                             <div className="mt-12 flex justify-center gap-3 opacity-30">
                                 <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0s' }} />
@@ -201,7 +201,7 @@ export function ChatPage() {
                             </div>
                             <div>
                                 <p className="text-xs font-black text-(--text) uppercase tracking-wider">
-                                    Gatekeeper Authorization
+                                    Autorización Requerida
                                 </p>
                                 <p className="text-[10px] text-(--text-muted) font-bold">
                                     Se requiere su firma digital para proceder.
@@ -213,7 +213,7 @@ export function ChatPage() {
                                 onClick={() => enviarMensaje('no')}
                                 className="flex-1 sm:flex-none px-6 py-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-500 text-[10px] font-black hover:bg-red-500/20 transition-all uppercase tracking-widest"
                             >
-                                Rehusar
+                                Cancelar
                             </button>
                             <button
                                 onClick={() => enviarMensaje('si')}
@@ -229,16 +229,16 @@ export function ChatPage() {
             {/* Area de Entrada Premium */}
             <div className="p-6 sticky bottom-0 z-30">
                 <div className="max-w-4xl mx-auto">
-                    <div className="glass rounded-[32px] p-2 border border-white/20 shadow-2xl transition-all">
+                    <div className="glass rounded-[9px] p-2 border border-white/20 shadow-2xl transition-all">
 
-                        <div className="flex gap-4 items-center bg-white/5 rounded-[24px]">
+                        <div className="flex gap-4 items-center bg-white/3 rounded-[6px]">
                             <textarea
                                 ref={textareaRef}
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 onInput={handleInput}
-                                placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "Escribe aquí... ( Shift + Enter para saltar línea )"}
+                                placeholder={mostrarConfirmacion ? "Confirmación pendiente..." : "⌨ Escribe aquí... ( Shift + Enter para saltar línea )"}
                                 rows={1}
                                 disabled={cargando || mostrarConfirmacion}
                                 className={clsx(
