@@ -19,10 +19,19 @@ export interface EsquemaParametro {
   descripcion: string;
 }
 
-let cacheApi: EsquemaEndpoint[] | null = null;
+let cacheApi: { data: EsquemaEndpoint[] | null; timestamp: number } = { data: null, timestamp: 0 };
+const CACHE_API_TTL_MS = 60 * 60 * 1000; // 1 hora
+
+// Verifica si el cache de API es válido
+function cacheApiValido(): boolean {
+  if (!cacheApi.data || !cacheApi.timestamp) return false;
+  return (Date.now() - cacheApi.timestamp) < CACHE_API_TTL_MS;
+}
 
 export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
-  if (cacheApi) return cacheApi;
+  if (cacheApiValido() && cacheApi.data) {
+    return cacheApi.data;
+  }
   console.log(`[${env.agent.name}] Está Leyendo el esquema OpenAPI...]`);
   const url = env.agent.api.openApiUrl;
   if (!url) throw new Error("AGENT_API_OPENAPI_URL no configurado en .env");
@@ -84,11 +93,11 @@ export async function descubrirEsquemaAPI(): Promise<EsquemaEndpoint[]> {
       });
     }
   }
-  cacheApi = endpoints;
+  cacheApi = { data: endpoints, timestamp: Date.now() };
   console.log(`[${env.agent.name}] Descubrí ${endpoints.length} endpoint(s)`);
   return endpoints;
 }
 
 export function invalidarCacheAPI(): void {
-  cacheApi = null;
+  cacheApi = { data: null, timestamp: 0 };
 }

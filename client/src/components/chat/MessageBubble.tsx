@@ -1,9 +1,12 @@
-import ReactMarkdown from 'react-markdown';
+import { lazy, Suspense } from 'react';
 import remarkGfm from 'remark-gfm';
 import DOMPurify from 'dompurify';
 import { clsx } from 'clsx';
 import { type Mensaje } from '@/types';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+
+// Lazy-load de ReactMarkdown (solo se carga cuando se necesita renderizar markdown del agente)
+const ReactMarkdown = lazy(() => import('react-markdown'));
 
 interface Props { mensaje: Mensaje; }
 export function MessageBubble({ mensaje }: Props) {
@@ -38,17 +41,17 @@ export function MessageBubble({ mensaje }: Props) {
                         <span className="w-2 h-2 rounded-full bg-current animate-bounce" />
                     </span>
                 ) : esUsuario ? (
-                    // Mensajes del usuario: texto plano (el usuario no escribe markdown)
                     <p className="whitespace-pre-wrap">{mensaje.contenido}</p>
                 ) : (
-                    // Mensajes del agente: renderizar markdown con sanitización
                     <div className="markdown-content">
-                        <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                        >
-                            {DOMPurify.sanitize(mensaje.contenido)}
-                        </ReactMarkdown>
+                        <Suspense fallback={<span className="text-xs opacity-50">Cargando...</span>}>
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={markdownComponents}
+                            >
+                                {DOMPurify.sanitize(mensaje.contenido)}
+                            </ReactMarkdown>
+                        </Suspense>
                     </div>
                 )}
                 {/* Tokens usados — solo en mensajes del agente */}
