@@ -9,6 +9,7 @@
 import { useRef, useEffect, useState, type KeyboardEvent } from 'react';
 import { Send, StopCircle, Bot, Sparkles, ShieldCheck, Upload } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
+import { useAuthStore } from '@/stores/authStore';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { Header } from '@/components/layout/Header';
 import { leerArchivo } from '@/lib/fileReader';
@@ -22,6 +23,8 @@ export function ChatPage() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // Ref para el input file oculto
     const fileInputRef = useRef<HTMLInputElement>(null);
+    //Traer la informacion del usuario
+    const usuario = useAuthStore((state) => state.usuario);
 
 
     // Manejar la seleccion de un archivo por el usuario
@@ -51,12 +54,11 @@ export function ChatPage() {
             // Mostrar mensaje en el chat indicando que el archivo fue cargado
             // El usuario debera escribir que quiere hacer con el archivo
             const mensajeCarga = [
-                `■ Archivo cargado: **${archivo.nombre}**`,
-                `${archivo.totalFilas} filas · ${archivo.encabezados.length} columnas`,
-                `Columnas detectadas: ${archivo.encabezados.join(', ')}`,
-                ``,
-                `Escribe que deseas hacer con este archivo.`,
-                `Ejemplo: "importa estos datos como nuevos clientes"`,
+                `✅ Archivo cargado: ${archivo.nombre}` + '\n',
+                //`${archivo.totalFilas} filas · ${archivo.encabezados.length} columnas` + '\n',
+                `🔎 Columnas detectadas: ${archivo.encabezados.join(', ')}` + '\n',
+                `¿Qué deseas hacer con este archivo?` + '\n',
+                //`Ejemplo: "importa estos datos como nuevos clientes"`,
             ].join('');
 
             // Enviar el mensaje de carga al chat (sin pasar por el agente todavia)
@@ -141,10 +143,16 @@ export function ChatPage() {
                                 <Bot size={48} className="text-white relative z-10" />
                             </div>
                             <h2 className="text-4xl font-black text-(--text) mb-4 tracking-tighter">
-                                Operation Center
+                                {usuario?.nombre}
                             </h2>
-                            <p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed border-l-2 border-accent/20 pl-6 italic">
+                            <h3 className="text-3xl font-black text-(--text) mb-4 tracking-tighter">
+                                Bienvenido al centro de operaciones
+                            </h3>
+                            {/*<p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed border-l-2 border-accent/20 pl-6 italic">
                                 Sistema de inteligencia autónoma integral para el análisis de datos masivos y gestión.
+                            </p>*/}
+                            <p className="text-(--text-muted) text-sm max-w-sm mx-auto leading-relaxed pl-6 italic">
+                                ¿Cómo puedo hacer hoy tu día más fácil?
                             </p>
                             <div className="mt-12 flex justify-center gap-3 opacity-30">
                                 <div className="w-1.5 h-1.5 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0s' }} />

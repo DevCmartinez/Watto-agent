@@ -66,7 +66,7 @@ export function LoginPage() {
                         </h1>
                         <div className="h-1 w-12 bg-accent mx-auto rounded-full mb-4" />
                         <p className="text-(--text-muted) text-[10px] uppercase tracking-[0.3em] font-black opacity-60">
-                            Enterprise Intelligence Suite
+                            Suite Empresarial Inteligente
                         </p>
                     </div>
 
@@ -83,7 +83,7 @@ export function LoginPage() {
                                 <input
                                     {...register('email')}
                                     type="email"
-                                    placeholder="name@company.com"
+                                    placeholder="email@ejemplo.com"
                                     disabled={loginCargando}
                                     className="w-full pl-12 pr-4 py-4 rounded-2xl outline-none"
                                 />
@@ -96,7 +96,7 @@ export function LoginPage() {
                         {/* Campo: Contraseña */}
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-(--text-muted) uppercase ml-1 tracking-wider opacity-60">
-                                Password
+                                Contraseña
                             </label>
                             <div className="relative group">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-(--text-muted) transition-colors group-focus-within:text-accent" />
@@ -137,7 +137,7 @@ export function LoginPage() {
                     {/* Pie de página del Login */}
                     <div className="mt-12 pt-8 border-t border-(--border)/30 text-center">
                         <p className="text-[9px] text-(--text-muted) font-bold uppercase tracking-[0.2em] opacity-40">
-                            Watto AI Autonomous Core v0.0.39-ALPHA
+                            Powered by Watto AI Autonomous Core v0.0.39-ALPHA
                         </p>
                     </div>
                 </div>

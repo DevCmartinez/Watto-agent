@@ -181,9 +181,9 @@ body {
 
 /* Inputs Premium */
 input, textarea {
-  background: rgba(var(--bg-card-rgb), 0.05) !important;
+  background: rgba(var(--bg-card-rgb), 0.3) !important;
   backdrop-filter: blur(4px);
-  border: 1px solid rgba(var(--bg-card-rgb), 0.1) !important;
+  border: 1px solid rgba(var(--bg-card-rgb), 0.3) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
