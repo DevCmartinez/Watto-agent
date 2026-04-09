@@ -20,6 +20,9 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 
 const app = express();
 
+// Confiar en proxy para obtener IP real del cliente (rate limiting)
+app.set('trust proxy', 1);
+
 /**
  * CONFIGURACIÓN DE MIDDLEWARES GLOBALES
  */

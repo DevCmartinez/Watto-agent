@@ -17,8 +17,11 @@ const pool = mysql.createPool({
 // Funcion para verificar la conexion al arrancar el servidor
 export async function connectDatabase(): Promise<void> {
   const conn = await pool.getConnection();
-  await conn.ping();
-  conn.release();
-  console.log(`[${env.agent.name}] Conectado a MySQL: ${env.db.host}/${env.db.name}`);
+  try {
+    await conn.ping();
+    console.log(`[${env.agent.name}] Conectado a MySQL: ${env.db.host}/${env.db.name}`);
+  } finally {
+    conn.release(); // Siempre liberar, incluso si ping() falla
+  }
 }
 export default pool;

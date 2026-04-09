@@ -41,11 +41,12 @@ function generarToken(payload: JwtPayload): string {
  * Configura una cookie segura para el token JWT usando cookie-parser.
  * SEC-01: httpOnly previene acceso via JavaScript (XSS).
  * SEC-01: secure solo en HTTPS (producción).
- * SEC-01: SameSite=Strict previene CSRF.
+ * SEC-01: SameSite=Lax permite navegación normal, bloquea CSRF en AJAX.
  */
 function setAuthCookie(res: Response, token: string): void {
   const esProduccion = process.env.NODE_ENV === 'production';
-  const maxAgeMs = (parseInt(env.jwt.expiresIn) || 24) * 60 * 60 * 1000; // convertir horas a ms
+  // Parsear expiresIn correctamente: "9h" → 9 horas en ms, "24h" → 24 horas en ms
+  const maxAgeMs = parseExpiresIn(env.jwt.expiresIn);
 
   res.cookie('token', token, {
     httpOnly: true,
@@ -54,6 +55,24 @@ function setAuthCookie(res: Response, token: string): void {
     maxAge: maxAgeMs,
     path: '/',
   });
+}
+
+/**
+ * Parsea JWT_EXPIRES_IN correctamente.
+ * Soporta formato "Nh" (ej: "9h", "24h"). Retorna milliseconds.
+ * Valor mínimo: 1 hora. Máximo: 12 horas.
+ */
+function parseExpiresIn(value: string): number {
+  const match = value.match(/^(\d+)(h)$/i);
+  if (!match) {
+    // Si no matchea el formato esperado, usar 9h por defecto
+    console.warn(`[Auth] JWT_EXPIRES_IN="${value}" no reconocido, usando 9h por defecto`);
+    return 9 * 60 * 60 * 1000;
+  }
+  const horas = parseInt(match[1], 10);
+  // Limitar entre 1 y 12 horas para seguridad
+  const horasLimitado = Math.min(Math.max(horas, 1), 12);
+  return horasLimitado * 60 * 60 * 1000;
 }
 
 /**
