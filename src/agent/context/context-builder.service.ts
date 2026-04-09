@@ -6,9 +6,18 @@ export function construirSystemPrompt(
   esquemaBD?: EsquemaTabla[],
   esquemaAPI?: EsquemaEndpoint[],
 ): string {
+  // Sanitizar variables de entorno para prevenir prompt injection
+  const sanitizar = (str: string | undefined): string => {
+    if (!str) return '';
+    return str.replace(/[^\w\s.,-]/g, '');
+  };
+
+  const nombreAgente = sanitizar(env.agent.name);
+  const contextoAgente = sanitizar(env.agent.context);
+
   const partes: string[] = [];
   partes.push(
-    `Eres ${env.agent.name}, agente IA de: ${env.agent.context}.
+    `Eres ${nombreAgente}, agente IA de: ${contextoAgente}.
     REGLAS:
     1. Responde SIEMPRE en el idioma que te hablen.
     2. Se preciso y conciso. NUNCA inventes datos, si no tienes informacion suficiente para responder, dilo claramente.

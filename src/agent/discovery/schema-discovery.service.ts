@@ -22,13 +22,18 @@ export interface RelacionForanea {
 }
 
 // Cache para evitar consultas repetidas
-// PERF-02: Agregar metadata de cache para TTL
 interface SchemaCache {
   data: EsquemaTabla[] | null;
   timestamp: number;
 }
 let cache: SchemaCache = { data: null, timestamp: 0 };
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
+
+// Verifica si el cache es válido (no expirado y no corrupto)
+function cacheValido(): boolean {
+  if (!cache.data || !cache.timestamp) return false;
+  return (Date.now() - cache.timestamp) < CACHE_TTL_MS;
+}
 
 // Tipos para resultados de MySQL
 interface ShowTableRow {
@@ -49,8 +54,7 @@ interface ForeignKeyRow extends RowDataPacket {
 
 // Función para descubrir el esquema de la base de datos
 export async function descubrirEsquemaBD(): Promise<EsquemaTabla[]> {
-  // PERF-02: Verificar TTL del cache
-  if (cache.data && (Date.now() - cache.timestamp) < CACHE_TTL_MS) {
+  if (cacheValido() && cache.data) {
     return cache.data;
   }
 
